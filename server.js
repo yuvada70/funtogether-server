@@ -140,6 +140,16 @@ app.get('/api/users', auth, (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.post('/api/messages/send', auth, (req, res) => {
+  try {
+    const { receiver_uin, content } = req.body;
+    if (!receiver_uin||!content?.trim()) return res.status(400).json({ error: 'Missing fields' });
+    db.prepare('INSERT INTO messages (sender_uin,receiver_uin,content) VALUES (?,?,?)')
+      .run(req.user.uin, receiver_uin, content.trim());
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/messages/:other', auth, (req, res) => {
   const msgs = db.prepare(`SELECT * FROM messages
     WHERE (sender_uin=? AND receiver_uin=?) OR (sender_uin=? AND receiver_uin=?)
