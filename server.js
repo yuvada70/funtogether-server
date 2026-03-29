@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 const multer     = require("multer");
 const path       = require("path");
 const fs         = require("fs");
+const crypto     = require("crypto");
 
 const app    = express();
 const server = http.createServer(app);
@@ -17,7 +18,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "funtogether_secret_2024";
 const PORT       = process.env.PORT || 3000;
 const db         = new Database(process.env.DB_PATH || "./funtogether.db");
 
-// ── DB SETUP ──
+// ── DB ──
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,18 +36,24 @@ db.exec(`
     sender_uin TEXT NOT NULL, receiver_uin TEXT NOT NULL,
     content TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS reset_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    code TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used INTEGER DEFAULT 0
+  );
 `);
 
-// Add photo columns if missing (migration)
+// Migrations
 try { db.exec("ALTER TABLE users ADD COLUMN photo1 TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN photo2 TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN photo3 TEXT"); } catch(e) {}
 
-// ── UPLOADS DIR ──
+// ── UPLOADS ──
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
-// ── MULTER ──
 const storage = multer.diskStorage({
   destination: function(req, file, cb) { cb(null, uploadsDir); },
   filename: function(req, file, cb) {
@@ -59,8 +66,7 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: function(req, file, cb) {
     var allowed = [".jpg",".jpeg",".png",".webp",".gif"];
-    var ext = path.extname(file.originalname).toLowerCase();
-    cb(null, allowed.includes(ext));
+    cb(null, allowed.includes(path.extname(file.originalname).toLowerCase()));
   }
 });
 
@@ -86,6 +92,7 @@ function auth(req, res, next) {
 // ── ROUTES ──
 app.get("/api/healthz", function(req, res) { res.json({ status: "ok" }); });
 
+// Register
 app.post("/api/auth/register", async function(req, res) {
   try {
     var b = req.body;
@@ -110,6 +117,7 @@ app.post("/api/auth/register", async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// Login
 app.post("/api/auth/login", async function(req, res) {
   try {
     var b = req.body;
@@ -122,6 +130,49 @@ app.post("/api/auth/login", async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── PASSWORD RESET ──
+
+// Step 1: Request reset code
+app.post("/api/auth/forgot-password", function(req, res) {
+  try {
+    var email = req.body.email;
+    if (!email) return res.status(400).json({ error: "Email required" });
+    var user = db.prepare("SELECT * FROM users WHERE email=?").get(email);
+    // Always return success (don't reveal if email exists)
+    if (!user) return res.json({ success: true });
+    // Generate 6-digit code
+    var code = String(Math.floor(100000 + Math.random() * 900000));
+    var expires = Date.now() + 15 * 60 * 1000; // 15 minutes
+    // Delete old codes for this email
+    db.prepare("DELETE FROM reset_codes WHERE email=?").run(email);
+    // Save new code
+    db.prepare("INSERT INTO reset_codes (email, code, expires_at) VALUES (?,?,?)").run(email, code, expires);
+    // Return code in response (frontend will send via EmailJS)
+    res.json({ success: true, code: code, name: user.name });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// Step 2: Verify code and reset password
+app.post("/api/auth/reset-password", async function(req, res) {
+  try {
+    var b = req.body;
+    if (!b.email || !b.code || !b.new_password)
+      return res.status(400).json({ error: "Missing fields" });
+    if (b.new_password.length < 6)
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    var record = db.prepare("SELECT * FROM reset_codes WHERE email=? AND code=? AND used=0").get(b.email, b.code);
+    if (!record) return res.status(400).json({ error: "קוד שגוי" });
+    if (Date.now() > record.expires_at) return res.status(400).json({ error: "הקוד פג תוקף. בקש קוד חדש." });
+    // Update password
+    var hash = await bcrypt.hash(b.new_password, 12);
+    db.prepare("UPDATE users SET password_hash=? WHERE email=?").run(hash, b.email);
+    // Mark code as used
+    db.prepare("UPDATE reset_codes SET used=1 WHERE id=?").run(record.id);
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// Profile
 app.get("/api/users/me", auth, function(req, res) {
   var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
   if (!user) return res.status(404).json({ error: "Not found" });
@@ -157,7 +208,7 @@ app.patch("/api/users/me", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── PHOTO UPLOAD ──
+// Photos
 app.post("/api/users/photo", auth, upload.single("photo"), function(req, res) {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -166,8 +217,7 @@ app.post("/api/users/photo", auth, upload.single("photo"), function(req, res) {
     var photoUrl = "/uploads/" + req.file.filename;
     var col = "photo" + slot;
     if (!["photo1","photo2","photo3"].includes(col))
-      return res.status(400).json({ error: "Invalid slot (1-3)" });
-    // Delete old file if exists
+      return res.status(400).json({ error: "Invalid slot" });
     if (user[col]) {
       var oldPath = path.join(__dirname, user[col]);
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
@@ -192,20 +242,22 @@ app.delete("/api/users/photo/:slot", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// Search
 app.get("/api/users", auth, function(req, res) {
   try {
-    var q2 = req.query;
+    var q = req.query;
     var sql = "SELECT uin,name,age,gender,location,height,body_type,eye_color,hair_color,skin_tone,marital_status,religion,smoking,bio,photo1,photo2,photo3 FROM users WHERE uin!=?";
     var params = [req.user.uin];
-    if (q2.gender)   { sql += " AND gender=?";        params.push(q2.gender); }
-    if (q2.location) { sql += " AND location LIKE ?";  params.push("%"+q2.location+"%"); }
-    if (q2.min_age)  { sql += " AND age>=?";           params.push(parseInt(q2.min_age)); }
-    if (q2.max_age)  { sql += " AND age<=?";           params.push(parseInt(q2.max_age)); }
+    if (q.gender)   { sql += " AND gender=?";        params.push(q.gender); }
+    if (q.location) { sql += " AND location LIKE ?";  params.push("%"+q.location+"%"); }
+    if (q.min_age)  { sql += " AND age>=?";           params.push(parseInt(q.min_age)); }
+    if (q.max_age)  { sql += " AND age<=?";           params.push(parseInt(q.max_age)); }
     sql += " ORDER BY created_at DESC";
-    res.json({ users: db.prepare(sql).all.apply(db.prepare(sql), params) });
+    res.json({ users: db.prepare(sql).all(...params) });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// Messages
 app.post("/api/messages/send", auth, function(req, res) {
   try {
     var b = req.body;
@@ -221,10 +273,10 @@ app.get("/api/messages/:other", auth, function(req, res) {
   res.json({ messages: msgs });
 });
 
-// ── SOCKET ──
+// Socket
 var onlineUsers = new Map();
 io.use(function(socket, next) {
-  try { socket.user = jwt.verify(socket.handshake.auth && socket.handshake.auth.token, JWT_SECRET); next(); }
+  try { socket.user = jwt.verify(socket.handshake.auth&&socket.handshake.auth.token, JWT_SECRET); next(); }
   catch(e) { next(new Error("Auth error")); }
 });
 io.on("connection", function(socket) {
