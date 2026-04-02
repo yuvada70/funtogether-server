@@ -8,7 +8,7 @@ const { Server } = require("socket.io");
 const multer     = require("multer");
 const path       = require("path");
 const fs         = require("fs");
-const nodemailer = require("nodemailer");
+
 
 const app    = express();
 const server = http.createServer(app);
@@ -17,9 +17,7 @@ const io     = new Server(server, { cors: { origin: "*" } });
 const JWT_SECRET   = process.env.JWT_SECRET || "funtogether_secret_2024";
 const PORT         = process.env.PORT || 3000;
 const db           = new Database(process.env.DB_PATH || "./funtogether.db");
-const ADMIN_EMAIL  = process.env.ADMIN_EMAIL || "yuvada70@gmail.com";
-const SMTP_USER    = process.env.SMTP_USER || "";
-const SMTP_PASS    = process.env.SMTP_PASS || "";
+
 
 // ── DB ──
 db.exec(`
@@ -87,19 +85,6 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(uploadsDir));
 
 // ── EMAIL ──
-function sendAdminEmail(subject, text) {
-  if (!SMTP_USER || !SMTP_PASS) return; // אם אין הגדרות SMTP — דלג
-  var transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: SMTP_USER, pass: SMTP_PASS }
-  });
-  transporter.sendMail({
-    from: SMTP_USER,
-    to: ADMIN_EMAIL,
-    subject: subject,
-    text: text
-  }).catch(function(e) { console.error("Email error:", e.message); });
-}
 
 function generateUIN() {
   for (var i = 0; i < 20; i++) {
@@ -266,13 +251,6 @@ app.post("/api/users/block", auth, function(req, res) {
     if (!blocked_uin) return res.status(400).json({ error: "Missing blocked_uin" });
     if (blocked_uin === req.user.uin) return res.status(400).json({ error: "Cannot block yourself" });
     db.prepare("INSERT OR IGNORE INTO blocks (blocker_uin, blocked_uin) VALUES (?,?)").run(req.user.uin, blocked_uin);
-    var blockedUser = db.prepare("SELECT name FROM users WHERE uin=?").get(blocked_uin);
-    sendAdminEmail(
-      "🚫 FunTogether - משתמש נחסם",
-      "חוסם: " + req.user.name + " (UIN: " + req.user.uin + ")\n" +
-      "נחסם: " + (blockedUser ? blockedUser.name : "לא ידוע") + " (UIN: " + blocked_uin + ")\n" +
-      "זמן: " + new Date().toLocaleString("he-IL")
-    );
     res.json({ ok: true });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
@@ -284,14 +262,6 @@ app.post("/api/users/report", auth, function(req, res) {
     var reason = req.body.reason || "לא צוינה סיבה";
     if (!reported_uin) return res.status(400).json({ error: "Missing reported_uin" });
     db.prepare("INSERT INTO reports (reporter_uin, reported_uin, reason) VALUES (?,?,?)").run(req.user.uin, reported_uin, reason);
-    var reportedUser = db.prepare("SELECT name FROM users WHERE uin=?").get(reported_uin);
-    sendAdminEmail(
-      "🚩 FunTogether - דיווח על משתמש",
-      "מדווח: " + req.user.name + " (UIN: " + req.user.uin + ")\n" +
-      "מדווח עליו: " + (reportedUser ? reportedUser.name : "לא ידוע") + " (UIN: " + reported_uin + ")\n" +
-      "סיבה: " + reason + "\n" +
-      "זמן: " + new Date().toLocaleString("he-IL")
-    );
     res.json({ ok: true });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
