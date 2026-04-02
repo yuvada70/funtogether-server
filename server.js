@@ -8,15 +8,18 @@ const { Server } = require("socket.io");
 const multer     = require("multer");
 const path       = require("path");
 const fs         = require("fs");
-const crypto     = require("crypto");
+const nodemailer = require("nodemailer");
 
 const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server, { cors: { origin: "*" } });
 
-const JWT_SECRET = process.env.JWT_SECRET || "funtogether_secret_2024";
-const PORT       = process.env.PORT || 3000;
-const db         = new Database(process.env.DB_PATH || "./funtogether.db");
+const JWT_SECRET   = process.env.JWT_SECRET || "funtogether_secret_2024";
+const PORT         = process.env.PORT || 3000;
+const db           = new Database(process.env.DB_PATH || "./funtogether.db");
+const ADMIN_EMAIL  = process.env.ADMIN_EMAIL || "yuvada70@gmail.com";
+const SMTP_USER    = process.env.SMTP_USER || "";
+const SMTP_PASS    = process.env.SMTP_PASS || "";
 
 // ── DB ──
 db.exec(`
@@ -38,10 +41,19 @@ db.exec(`
   );
   CREATE TABLE IF NOT EXISTS reset_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT NOT NULL,
-    code TEXT NOT NULL,
-    expires_at INTEGER NOT NULL,
-    used INTEGER DEFAULT 0
+    email TEXT NOT NULL, code TEXT NOT NULL,
+    expires_at INTEGER NOT NULL, used INTEGER DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS blocks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    blocker_uin TEXT NOT NULL, blocked_uin TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(blocker_uin, blocked_uin)
+  );
+  CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporter_uin TEXT NOT NULL, reported_uin TEXT NOT NULL,
+    reason TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
@@ -73,6 +85,21 @@ const upload = multer({
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(uploadsDir));
+
+// ── EMAIL ──
+function sendAdminEmail(subject, text) {
+  if (!SMTP_USER || !SMTP_PASS) return; // אם אין הגדרות SMTP — דלג
+  var transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
+  });
+  transporter.sendMail({
+    from: SMTP_USER,
+    to: ADMIN_EMAIL,
+    subject: subject,
+    text: text
+  }).catch(function(e) { console.error("Email error:", e.message); });
+}
 
 function generateUIN() {
   for (var i = 0; i < 20; i++) {
@@ -130,29 +157,21 @@ app.post("/api/auth/login", async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── PASSWORD RESET ──
-
-// Step 1: Request reset code
+// Password Reset
 app.post("/api/auth/forgot-password", function(req, res) {
   try {
     var email = req.body.email;
     if (!email) return res.status(400).json({ error: "Email required" });
     var user = db.prepare("SELECT * FROM users WHERE email=?").get(email);
-    // Always return success (don't reveal if email exists)
     if (!user) return res.json({ success: true });
-    // Generate 6-digit code
     var code = String(Math.floor(100000 + Math.random() * 900000));
-    var expires = Date.now() + 15 * 60 * 1000; // 15 minutes
-    // Delete old codes for this email
+    var expires = Date.now() + 15 * 60 * 1000;
     db.prepare("DELETE FROM reset_codes WHERE email=?").run(email);
-    // Save new code
     db.prepare("INSERT INTO reset_codes (email, code, expires_at) VALUES (?,?,?)").run(email, code, expires);
-    // Return code in response (frontend will send via EmailJS)
     res.json({ success: true, code: code, name: user.name });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Step 2: Verify code and reset password
 app.post("/api/auth/reset-password", async function(req, res) {
   try {
     var b = req.body;
@@ -163,10 +182,8 @@ app.post("/api/auth/reset-password", async function(req, res) {
     var record = db.prepare("SELECT * FROM reset_codes WHERE email=? AND code=? AND used=0").get(b.email, b.code);
     if (!record) return res.status(400).json({ error: "קוד שגוי" });
     if (Date.now() > record.expires_at) return res.status(400).json({ error: "הקוד פג תוקף. בקש קוד חדש." });
-    // Update password
     var hash = await bcrypt.hash(b.new_password, 12);
     db.prepare("UPDATE users SET password_hash=? WHERE email=?").run(hash, b.email);
-    // Mark code as used
     db.prepare("UPDATE reset_codes SET used=1 WHERE id=?").run(record.id);
     res.json({ success: true });
   } catch(err) { res.status(500).json({ error: err.message }); }
@@ -242,16 +259,57 @@ app.delete("/api/users/photo/:slot", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Search
+// ── BLOCK ──
+app.post("/api/users/block", auth, function(req, res) {
+  try {
+    var blocked_uin = req.body.blocked_uin;
+    if (!blocked_uin) return res.status(400).json({ error: "Missing blocked_uin" });
+    if (blocked_uin === req.user.uin) return res.status(400).json({ error: "Cannot block yourself" });
+    db.prepare("INSERT OR IGNORE INTO blocks (blocker_uin, blocked_uin) VALUES (?,?)").run(req.user.uin, blocked_uin);
+    var blockedUser = db.prepare("SELECT name FROM users WHERE uin=?").get(blocked_uin);
+    sendAdminEmail(
+      "🚫 FunTogether - משתמש נחסם",
+      "חוסם: " + req.user.name + " (UIN: " + req.user.uin + ")\n" +
+      "נחסם: " + (blockedUser ? blockedUser.name : "לא ידוע") + " (UIN: " + blocked_uin + ")\n" +
+      "זמן: " + new Date().toLocaleString("he-IL")
+    );
+    res.json({ ok: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── REPORT ──
+app.post("/api/users/report", auth, function(req, res) {
+  try {
+    var reported_uin = req.body.reported_uin;
+    var reason = req.body.reason || "לא צוינה סיבה";
+    if (!reported_uin) return res.status(400).json({ error: "Missing reported_uin" });
+    db.prepare("INSERT INTO reports (reporter_uin, reported_uin, reason) VALUES (?,?,?)").run(req.user.uin, reported_uin, reason);
+    var reportedUser = db.prepare("SELECT name FROM users WHERE uin=?").get(reported_uin);
+    sendAdminEmail(
+      "🚩 FunTogether - דיווח על משתמש",
+      "מדווח: " + req.user.name + " (UIN: " + req.user.uin + ")\n" +
+      "מדווח עליו: " + (reportedUser ? reportedUser.name : "לא ידוע") + " (UIN: " + reported_uin + ")\n" +
+      "סיבה: " + reason + "\n" +
+      "זמן: " + new Date().toLocaleString("he-IL")
+    );
+    res.json({ ok: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// Search — מסנן משתמשים חסומים
 app.get("/api/users", auth, function(req, res) {
   try {
     var q = req.query;
-    var sql = "SELECT uin,name,age,gender,location,height,body_type,eye_color,hair_color,skin_tone,marital_status,religion,smoking,bio,photo1,photo2,photo3 FROM users WHERE uin!=?";
-    var params = [req.user.uin];
-    if (q.gender)   { sql += " AND gender=?";        params.push(q.gender); }
-    if (q.location) { sql += " AND location LIKE ?";  params.push("%"+q.location+"%"); }
-    if (q.min_age)  { sql += " AND age>=?";           params.push(parseInt(q.min_age)); }
-    if (q.max_age)  { sql += " AND age<=?";           params.push(parseInt(q.max_age)); }
+    var sql = `SELECT uin,name,age,gender,location,height,body_type,eye_color,hair_color,
+      skin_tone,marital_status,religion,smoking,bio,photo1,photo2,photo3
+      FROM users WHERE uin!=?
+      AND uin NOT IN (SELECT blocked_uin FROM blocks WHERE blocker_uin=?)
+      AND uin NOT IN (SELECT blocker_uin FROM blocks WHERE blocked_uin=?)`;
+    var params = [req.user.uin, req.user.uin, req.user.uin];
+    if (q.gender)   { sql += " AND gender=?";       params.push(q.gender); }
+    if (q.location) { sql += " AND location LIKE ?"; params.push("%"+q.location+"%"); }
+    if (q.min_age)  { sql += " AND age>=?";          params.push(parseInt(q.min_age)); }
+    if (q.max_age)  { sql += " AND age<=?";          params.push(parseInt(q.max_age)); }
     sql += " ORDER BY created_at DESC";
     res.json({ users: db.prepare(sql).all(...params) });
   } catch(err) { res.status(500).json({ error: err.message }); }
@@ -262,6 +320,9 @@ app.post("/api/messages/send", auth, function(req, res) {
   try {
     var b = req.body;
     if (!b.receiver_uin||!b.content||!b.content.trim()) return res.status(400).json({ error: "Missing fields" });
+    // בדיקת חסימה
+    var isBlocked = db.prepare("SELECT id FROM blocks WHERE (blocker_uin=? AND blocked_uin=?) OR (blocker_uin=? AND blocked_uin=?)").get(req.user.uin, b.receiver_uin, b.receiver_uin, req.user.uin);
+    if (isBlocked) return res.status(403).json({ error: "לא ניתן לשלוח הודעה למשתמש זה" });
     db.prepare("INSERT INTO messages (sender_uin,receiver_uin,content) VALUES (?,?,?)").run(req.user.uin, b.receiver_uin, b.content.trim());
     res.json({ success: true });
   } catch(err) { res.status(500).json({ error: err.message }); }
@@ -284,6 +345,8 @@ io.on("connection", function(socket) {
   onlineUsers.set(uin, socket.id);
   socket.on("send_message", function(data) {
     if (!data.content||!data.content.trim()||!data.recipientUin) return;
+    var isBlocked = db.prepare("SELECT id FROM blocks WHERE (blocker_uin=? AND blocked_uin=?) OR (blocker_uin=? AND blocked_uin=?)").get(uin, data.recipientUin, data.recipientUin, uin);
+    if (isBlocked) return;
     db.prepare("INSERT INTO messages (sender_uin,receiver_uin,content) VALUES (?,?,?)").run(uin, data.recipientUin, data.content.trim());
     var s = onlineUsers.get(data.recipientUin);
     if (s) io.to(s).emit("new_message", { sender_uin:uin, sender_name:name, content:data.content.trim(), created_at:new Date().toISOString() });
