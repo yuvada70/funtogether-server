@@ -244,7 +244,28 @@ app.delete("/api/users/photo/:slot", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── BLOCK ──
+// Delete account
+app.delete("/api/users/me", auth, function(req, res) {
+  try {
+    var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
+    if (!user) return res.status(404).json({ error: "Not found" });
+    // מחיקת תמונות
+    ["photo1","photo2","photo3"].forEach(function(col) {
+      if (user[col]) {
+        var p = path.join(__dirname, user[col]);
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      }
+    });
+    // מחיקת כל הנתונים
+    db.prepare("DELETE FROM messages WHERE sender_uin=? OR receiver_uin=?").run(req.user.uin, req.user.uin);
+    db.prepare("DELETE FROM blocks WHERE blocker_uin=? OR blocked_uin=?").run(req.user.uin, req.user.uin);
+    db.prepare("DELETE FROM reports WHERE reporter_uin=? OR reported_uin=?").run(req.user.uin, req.user.uin);
+    db.prepare("DELETE FROM users WHERE uin=?").run(req.user.uin);
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// Block
 app.post("/api/users/block", auth, function(req, res) {
   try {
     var blocked_uin = req.body.blocked_uin;
