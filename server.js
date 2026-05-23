@@ -9,17 +9,14 @@ const multer     = require("multer");
 const path       = require("path");
 const fs         = require("fs");
 
-
 const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server, { cors: { origin: "*" } });
 
-const JWT_SECRET   = process.env.JWT_SECRET || "funtogether_secret_2024";
-const PORT         = process.env.PORT || 3000;
-const db           = new Database(process.env.DB_PATH || "./funtogether.db");
+const JWT_SECRET = process.env.JWT_SECRET || "funtogether_secret_2024";
+const PORT       = process.env.PORT || 3000;
+const db         = new Database(process.env.DB_PATH || "./funtogether.db");
 
-
-// ── DB ──
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,12 +52,10 @@ db.exec(`
   );
 `);
 
-// Migrations
 try { db.exec("ALTER TABLE users ADD COLUMN photo1 TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN photo2 TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN photo3 TEXT"); } catch(e) {}
 
-// ── UPLOADS ──
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
@@ -84,8 +79,6 @@ app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(uploadsDir));
 
-// ── EMAIL ──
-
 function generateUIN() {
   for (var i = 0; i < 20; i++) {
     var uin = String(Math.floor(10000000 + Math.random() * 90000000));
@@ -101,7 +94,6 @@ function auth(req, res, next) {
   } catch { res.status(401).json({ error: "Invalid token" }); }
 }
 
-// ── ROUTES ──
 app.get("/api/healthz", function(req, res) { res.json({ status: "ok" }); });
 
 // Register
@@ -174,7 +166,7 @@ app.post("/api/auth/reset-password", async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Profile
+// My profile
 app.get("/api/users/me", auth, function(req, res) {
   var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
   if (!user) return res.status(404).json({ error: "Not found" });
@@ -207,6 +199,15 @@ app.patch("/api/users/me", auth, function(req, res) {
     var result = Object.assign({}, updated);
     delete result.password_hash;
     res.json(result);
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── GET USER PROFILE BY UIN (חדש!) ──
+app.get("/api/users/:uin", auth, function(req, res) {
+  try {
+    var user = db.prepare("SELECT uin,name,age,gender,location,height,body_type,eye_color,hair_color,skin_tone,marital_status,religion,smoking,bio,photo1,photo2,photo3 FROM users WHERE uin=?").get(req.params.uin);
+    if (!user) return res.status(404).json({ error: "Not found" });
+    res.json(user);
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -249,14 +250,12 @@ app.delete("/api/users/me", auth, function(req, res) {
   try {
     var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
     if (!user) return res.status(404).json({ error: "Not found" });
-    // מחיקת תמונות
     ["photo1","photo2","photo3"].forEach(function(col) {
       if (user[col]) {
         var p = path.join(__dirname, user[col]);
         if (fs.existsSync(p)) fs.unlinkSync(p);
       }
     });
-    // מחיקת כל הנתונים
     db.prepare("DELETE FROM messages WHERE sender_uin=? OR receiver_uin=?").run(req.user.uin, req.user.uin);
     db.prepare("DELETE FROM blocks WHERE blocker_uin=? OR blocked_uin=?").run(req.user.uin, req.user.uin);
     db.prepare("DELETE FROM reports WHERE reporter_uin=? OR reported_uin=?").run(req.user.uin, req.user.uin);
@@ -276,7 +275,7 @@ app.post("/api/users/block", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── REPORT ──
+// Report
 app.post("/api/users/report", auth, function(req, res) {
   try {
     var reported_uin = req.body.reported_uin;
@@ -287,7 +286,7 @@ app.post("/api/users/report", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Search — מסנן משתמשים חסומים
+// Search
 app.get("/api/users", auth, function(req, res) {
   try {
     var q = req.query;
@@ -311,7 +310,6 @@ app.post("/api/messages/send", auth, function(req, res) {
   try {
     var b = req.body;
     if (!b.receiver_uin||!b.content||!b.content.trim()) return res.status(400).json({ error: "Missing fields" });
-    // בדיקת חסימה
     var isBlocked = db.prepare("SELECT id FROM blocks WHERE (blocker_uin=? AND blocked_uin=?) OR (blocker_uin=? AND blocked_uin=?)").get(req.user.uin, b.receiver_uin, b.receiver_uin, req.user.uin);
     if (isBlocked) return res.status(403).json({ error: "לא ניתן לשלוח הודעה למשתמש זה" });
     db.prepare("INSERT INTO messages (sender_uin,receiver_uin,content) VALUES (?,?,?)").run(req.user.uin, b.receiver_uin, b.content.trim());
