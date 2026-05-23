@@ -167,6 +167,24 @@ app.post("/api/auth/reset-password", async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// Change password (logged in)
+app.post("/api/auth/change-password", auth, async function(req, res) {
+  try {
+    var b = req.body;
+    if (!b.old_password || !b.new_password)
+      return res.status(400).json({ error: "Missing fields" });
+    if (b.new_password.length < 6)
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    var match = await bcrypt.compare(b.old_password, user.password_hash);
+    if (!match) return res.status(400).json({ error: "סיסמה נוכחית שגויה" });
+    var hash = await bcrypt.hash(b.new_password, 12);
+    db.prepare("UPDATE users SET password_hash=? WHERE uin=?").run(hash, req.user.uin);
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // My profile
 app.get("/api/users/me", auth, function(req, res) {
   var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
