@@ -55,6 +55,7 @@ db.exec(`
 try { db.exec("ALTER TABLE users ADD COLUMN photo1 TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN photo2 TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN photo3 TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN religion_attitude TEXT"); } catch(e) {}
 
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
@@ -110,12 +111,12 @@ app.post("/api/auth/register", async function(req, res) {
     var uin = generateUIN();
     var hash = await bcrypt.hash(b.password, 12);
     db.prepare(`INSERT INTO users (uin,name,email,password_hash,age,gender,location,height,body_type,
-      eye_color,hair_color,skin_tone,marital_status,religion,smoking,bio)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+      eye_color,hair_color,skin_tone,marital_status,religion,religion_attitude,smoking,bio)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
       uin,b.name,b.email,hash,b.age,b.gender,
       b.location||null,b.height||null,b.body_type||null,b.eye_color||null,
       b.hair_color||null,b.skin_tone||null,b.marital_status||null,
-      b.religion||null,b.smoking||null,b.bio||null);
+      b.religion||null,b.religion_attitude||null,b.smoking||null,b.bio||null);
     var token = jwt.sign({ uin:uin, name:b.name }, JWT_SECRET, { expiresIn:"30d" });
     res.status(201).json({ uin:uin, name:b.name, token:token });
   } catch(err) { res.status(500).json({ error: err.message }); }
@@ -181,7 +182,7 @@ app.patch("/api/users/me", auth, function(req, res) {
     if (!user) return res.status(404).json({ error: "Not found" });
     var b = req.body;
     db.prepare(`UPDATE users SET name=?,age=?,location=?,height=?,body_type=?,
-      eye_color=?,hair_color=?,skin_tone=?,marital_status=?,religion=?,smoking=?,bio=?
+      eye_color=?,hair_color=?,skin_tone=?,marital_status=?,religion=?,religion_attitude=?,smoking=?,bio=?
       WHERE uin=?`).run(
       b.name||user.name, b.age||user.age,
       b.location!==undefined?b.location:user.location,
@@ -192,6 +193,7 @@ app.patch("/api/users/me", auth, function(req, res) {
       b.skin_tone!==undefined?b.skin_tone:user.skin_tone,
       b.marital_status!==undefined?b.marital_status:user.marital_status,
       b.religion!==undefined?b.religion:user.religion,
+      b.religion_attitude!==undefined?b.religion_attitude:user.religion_attitude,
       b.smoking!==undefined?b.smoking:user.smoking,
       b.bio!==undefined?b.bio:user.bio,
       req.user.uin);
@@ -205,7 +207,7 @@ app.patch("/api/users/me", auth, function(req, res) {
 // ── GET USER PROFILE BY UIN (חדש!) ──
 app.get("/api/users/:uin", auth, function(req, res) {
   try {
-    var user = db.prepare("SELECT uin,name,age,gender,location,height,body_type,eye_color,hair_color,skin_tone,marital_status,religion,smoking,bio,photo1,photo2,photo3 FROM users WHERE uin=?").get(req.params.uin);
+    var user = db.prepare("SELECT uin,name,age,gender,location,height,body_type,eye_color,hair_color,skin_tone,marital_status,religion,religion_attitude,smoking,bio,photo1,photo2,photo3 FROM users WHERE uin=?").get(req.params.uin);
     if (!user) return res.status(404).json({ error: "Not found" });
     res.json(user);
   } catch(err) { res.status(500).json({ error: err.message }); }
