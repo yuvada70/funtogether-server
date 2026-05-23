@@ -97,7 +97,7 @@ function auth(req, res, next) {
 
 app.get("/api/healthz", function(req, res) { res.json({ status: "ok" }); });
 
-// Register
+// ── AUTH ──
 app.post("/api/auth/register", async function(req, res) {
   try {
     var b = req.body;
@@ -122,7 +122,6 @@ app.post("/api/auth/register", async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Login
 app.post("/api/auth/login", async function(req, res) {
   try {
     var b = req.body;
@@ -135,7 +134,6 @@ app.post("/api/auth/login", async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Password Reset
 app.post("/api/auth/forgot-password", function(req, res) {
   try {
     var email = req.body.email;
@@ -167,7 +165,6 @@ app.post("/api/auth/reset-password", async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Change password (logged in)
 app.post("/api/auth/change-password", auth, async function(req, res) {
   try {
     var b = req.body;
@@ -185,7 +182,7 @@ app.post("/api/auth/change-password", auth, async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// My profile
+// ── USERS/ME — חייב לבוא לפני /users/:uin ──
 app.get("/api/users/me", auth, function(req, res) {
   var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
   if (!user) return res.status(404).json({ error: "Not found" });
@@ -222,16 +219,25 @@ app.patch("/api/users/me", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── GET USER PROFILE BY UIN (חדש!) ──
-app.get("/api/users/:uin", auth, function(req, res) {
+app.delete("/api/users/me", auth, function(req, res) {
   try {
-    var user = db.prepare("SELECT uin,name,age,gender,location,height,body_type,eye_color,hair_color,skin_tone,marital_status,religion,religion_attitude,smoking,bio,photo1,photo2,photo3 FROM users WHERE uin=?").get(req.params.uin);
+    var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
     if (!user) return res.status(404).json({ error: "Not found" });
-    res.json(user);
+    ["photo1","photo2","photo3"].forEach(function(col) {
+      if (user[col]) {
+        var p = path.join(__dirname, user[col]);
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      }
+    });
+    db.prepare("DELETE FROM messages WHERE sender_uin=? OR receiver_uin=?").run(req.user.uin, req.user.uin);
+    db.prepare("DELETE FROM blocks WHERE blocker_uin=? OR blocked_uin=?").run(req.user.uin, req.user.uin);
+    db.prepare("DELETE FROM reports WHERE reporter_uin=? OR reported_uin=?").run(req.user.uin, req.user.uin);
+    db.prepare("DELETE FROM users WHERE uin=?").run(req.user.uin);
+    res.json({ success: true });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Photos
+// ── PHOTOS — חייב לבוא לפני /users/:uin ──
 app.post("/api/users/photo", auth, upload.single("photo"), function(req, res) {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -265,26 +271,7 @@ app.delete("/api/users/photo/:slot", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Delete account
-app.delete("/api/users/me", auth, function(req, res) {
-  try {
-    var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
-    if (!user) return res.status(404).json({ error: "Not found" });
-    ["photo1","photo2","photo3"].forEach(function(col) {
-      if (user[col]) {
-        var p = path.join(__dirname, user[col]);
-        if (fs.existsSync(p)) fs.unlinkSync(p);
-      }
-    });
-    db.prepare("DELETE FROM messages WHERE sender_uin=? OR receiver_uin=?").run(req.user.uin, req.user.uin);
-    db.prepare("DELETE FROM blocks WHERE blocker_uin=? OR blocked_uin=?").run(req.user.uin, req.user.uin);
-    db.prepare("DELETE FROM reports WHERE reporter_uin=? OR reported_uin=?").run(req.user.uin, req.user.uin);
-    db.prepare("DELETE FROM users WHERE uin=?").run(req.user.uin);
-    res.json({ success: true });
-  } catch(err) { res.status(500).json({ error: err.message }); }
-});
-
-// Block
+// ── BLOCK / REPORT — חייב לבוא לפני /users/:uin ──
 app.post("/api/users/block", auth, function(req, res) {
   try {
     var blocked_uin = req.body.blocked_uin;
@@ -295,7 +282,6 @@ app.post("/api/users/block", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Report
 app.post("/api/users/report", auth, function(req, res) {
   try {
     var reported_uin = req.body.reported_uin;
@@ -306,7 +292,7 @@ app.post("/api/users/report", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Search
+// ── SEARCH ──
 app.get("/api/users", auth, function(req, res) {
   try {
     var q = req.query;
@@ -325,7 +311,18 @@ app.get("/api/users", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Messages
+// ── GET USER BY UIN — חייב לבוא אחרון! ──
+app.get("/api/users/:uin", auth, function(req, res) {
+  try {
+    var user = db.prepare(`SELECT uin,name,age,gender,location,height,body_type,
+      eye_color,hair_color,skin_tone,marital_status,religion,religion_attitude,
+      smoking,bio,photo1,photo2,photo3 FROM users WHERE uin=?`).get(req.params.uin);
+    if (!user) return res.status(404).json({ error: "Not found" });
+    res.json(user);
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── MESSAGES ──
 app.post("/api/messages/send", auth, function(req, res) {
   try {
     var b = req.body;
@@ -343,7 +340,7 @@ app.get("/api/messages/:other", auth, function(req, res) {
   res.json({ messages: msgs });
 });
 
-// Socket
+// ── SOCKET ──
 var onlineUsers = new Map();
 io.use(function(socket, next) {
   try { socket.user = jwt.verify(socket.handshake.auth&&socket.handshake.auth.token, JWT_SECRET); next(); }
