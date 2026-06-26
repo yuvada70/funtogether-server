@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 const multer     = require("multer");
 const path       = require("path");
 const fs         = require("fs");
+const webpush    = require("web-push");
 
 const app    = express();
 const server = http.createServer(app);
@@ -50,6 +51,12 @@ db.exec(`
     reporter_uin TEXT NOT NULL, reported_uin TEXT NOT NULL,
     reason TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    uin TEXT NOT NULL, endpoint TEXT UNIQUE NOT NULL,
+    p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 try { db.exec("ALTER TABLE users ADD COLUMN photo1 TEXT"); } catch(e) {}
@@ -79,6 +86,7 @@ const upload = multer({
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(uploadsDir));
+app.use(express.static(path.join(__dirname, "public")));
 
 function generateUIN() {
   for (var i = 0; i < 20; i++) {
@@ -93,6 +101,29 @@ function auth(req, res, next) {
     req.user = jwt.verify((req.headers.authorization||"").replace("Bearer ",""), JWT_SECRET);
     next();
   } catch { res.status(401).json({ error: "Invalid token" }); }
+}
+
+// ── WEB PUSH ──
+const VAPID_PUBLIC_KEY  = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT     = process.env.VAPID_SUBJECT || "mailto:admin@funtogether.app";
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+} else {
+  console.warn("VAPID keys not set — push notifications disabled. Generate with: npx web-push generate-vapid-keys");
+}
+
+function sendPushToUser(uin, payload) {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
+  var subs = db.prepare("SELECT * FROM push_subscriptions WHERE uin=?").all(uin);
+  subs.forEach(function(sub) {
+    var pushSubscription = { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } };
+    webpush.sendNotification(pushSubscription, JSON.stringify(payload)).catch(function(err) {
+      if (err.statusCode === 404 || err.statusCode === 410) {
+        db.prepare("DELETE FROM push_subscriptions WHERE endpoint=?").run(sub.endpoint);
+      }
+    });
+  });
 }
 
 app.get("/api/healthz", function(req, res) { res.json({ status: "ok" }); });
@@ -322,6 +353,42 @@ app.get("/api/users/:uin", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── PUSH SUBSCRIPTIONS ──
+app.get("/api/push/vapid-public-key", function(req, res) {
+  if (!VAPID_PUBLIC_KEY) return res.status(503).json({ error: "Push notifications not configured" });
+  res.json({ publicKey: VAPID_PUBLIC_KEY });
+});
+
+app.post("/api/push/subscribe", auth, function(req, res) {
+  try {
+    var sub = req.body.subscription;
+    if (!sub || !sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth)
+      return res.status(400).json({ error: "Invalid subscription" });
+    db.prepare(`INSERT INTO push_subscriptions (uin, endpoint, p256dh, auth) VALUES (?,?,?,?)
+      ON CONFLICT(endpoint) DO UPDATE SET uin=excluded.uin, p256dh=excluded.p256dh, auth=excluded.auth`)
+      .run(req.user.uin, sub.endpoint, sub.keys.p256dh, sub.keys.auth);
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post("/api/push/unsubscribe", auth, function(req, res) {
+  try {
+    var endpoint = req.body.endpoint;
+    if (!endpoint) return res.status(400).json({ error: "Missing endpoint" });
+    db.prepare("DELETE FROM push_subscriptions WHERE endpoint=? AND uin=?").run(endpoint, req.user.uin);
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post("/api/push/send", auth, function(req, res) {
+  try {
+    var b = req.body;
+    if (!b.uin || !b.title) return res.status(400).json({ error: "Missing fields" });
+    sendPushToUser(b.uin, { title: b.title, body: b.body || "", url: b.url || "/" });
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── MESSAGES ──
 app.post("/api/messages/send", auth, function(req, res) {
   try {
@@ -330,6 +397,7 @@ app.post("/api/messages/send", auth, function(req, res) {
     var isBlocked = db.prepare("SELECT id FROM blocks WHERE (blocker_uin=? AND blocked_uin=?) OR (blocker_uin=? AND blocked_uin=?)").get(req.user.uin, b.receiver_uin, b.receiver_uin, req.user.uin);
     if (isBlocked) return res.status(403).json({ error: "לא ניתן לשלוח הודעה למשתמש זה" });
     db.prepare("INSERT INTO messages (sender_uin,receiver_uin,content) VALUES (?,?,?)").run(req.user.uin, b.receiver_uin, b.content.trim());
+    sendPushToUser(b.receiver_uin, { title: req.user.name, body: b.content.trim(), url: "/chat/" + req.user.uin });
     res.json({ success: true });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
@@ -356,6 +424,7 @@ io.on("connection", function(socket) {
     db.prepare("INSERT INTO messages (sender_uin,receiver_uin,content) VALUES (?,?,?)").run(uin, data.recipientUin, data.content.trim());
     var s = onlineUsers.get(data.recipientUin);
     if (s) io.to(s).emit("new_message", { sender_uin:uin, sender_name:name, content:data.content.trim(), created_at:new Date().toISOString() });
+    else sendPushToUser(data.recipientUin, { title: name, body: data.content.trim(), url: "/chat/" + uin });
     socket.emit("message_sent", { success:true });
   });
   socket.on("disconnect", function() { onlineUsers.delete(uin); });
