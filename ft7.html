@@ -191,6 +191,7 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
   </div>
 </div>
 
+<script src="/push-client.js"></script>
 <script>
 var API="https://funtogether-server-production.up.railway.app";
 function go(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
@@ -201,7 +202,12 @@ function val(id){return document.getElementById(id).value;}
 document.getElementById('btn-to-reg').onclick=function(){go('sc-register');};
 document.getElementById('btn-to-login').onclick=function(){go('sc-login');};
 document.getElementById('btn-to-main').onclick=function(){go('sc-main');};
-document.getElementById('btn-logout').onclick=function(){go('sc-login');};
+document.getElementById('btn-logout').onclick=function(){
+  var token=localStorage.getItem('token');
+  if(token)unsubscribeFromPush(API,token).catch(function(){});
+  localStorage.removeItem('token');
+  go('sc-login');
+};
 
 document.getElementById('btn-login').onclick=async function(){
   hideErr('l-err');
@@ -212,8 +218,10 @@ document.getElementById('btn-login').onclick=async function(){
     var res=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass})});
     var data=await res.json();
     if(!res.ok){showErr('l-err',data.error||'שגיאה בכניסה');return;}
+    localStorage.setItem('token',data.token);
     document.getElementById('main-hi').textContent='שלום, '+data.name+'! 👋';
     go('sc-main');
+    subscribeToPush(API,data.token);
   }catch(e){showErr('l-err','שגיאת חיבור לשרת');}
   finally{btn.textContent='כניסה';btn.disabled=false;}
 };

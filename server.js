@@ -86,6 +86,7 @@ const upload = multer({
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(uploadsDir));
+app.use(express.static(path.join(__dirname, "public")));
 
 function generateUIN() {
   for (var i = 0; i < 20; i++) {
