@@ -29,6 +29,21 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
 .uin-box{background:linear-gradient(135deg,#f5f0ff,#ede8ff);border:1.5px solid #c4b5fd;border-radius:16px;padding:20px;text-align:center;margin:18px 0;}
 .uin-num{font-size:36px;font-weight:900;letter-spacing:6px;color:#7c3aed;font-family:'Poppins',sans-serif;}
 .opt{font-size:10px;color:#c4b5fd;font-weight:400;margin-right:4px;}
+.link-btn{background:none;border:none;color:#7c3aed;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:underline;padding:0;margin-top:10px;display:block;width:100%;text-align:center;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(20,10,40,0.45);align-items:center;justify-content:center;padding:20px;z-index:100;}
+.modal-overlay.active{display:flex;}
+.modal-box{background:#fff;border-radius:20px;padding:24px 22px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(0,0,0,0.2);}
+.modal-title{font-size:16px;font-weight:800;color:#1a1a1a;margin-bottom:14px;text-align:center;}
+.modal-actions{display:flex;gap:8px;margin-top:12px;}
+.modal-actions .btn-main,.modal-actions .btn-sec{margin-top:0;}
+.suc{background:#eefcf0;border:1px solid #b6e8bf;border-radius:10px;padding:10px 14px;font-size:12px;color:#1e7a32;margin-top:10px;display:none;line-height:1.5;}
+.search-card{width:100%;max-width:420px;}
+.results-list{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
+.result-item{background:#faf8ff;border:1px solid #ede8f8;border-radius:14px;padding:12px 14px;text-align:right;}
+.result-item .r-name{font-weight:700;font-size:14px;color:#1a1a1a;}
+.result-item .r-meta{font-size:12px;color:#9b8ab8;margin-top:2px;}
+.result-item .r-uin{font-size:11px;color:#7c3aed;font-weight:700;margin-top:4px;}
+.empty-msg{text-align:center;color:#b0a0cc;font-size:13px;margin-top:16px;}
 </style>
 </head>
 <body>
@@ -44,6 +59,34 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
     <div class="err" id="l-err"></div>
     <button class="btn-main" id="btn-login">כניסה</button>
     <button class="btn-sec" id="btn-to-reg">הרשמה — משתמש חדש</button>
+    <button class="link-btn" id="btn-open-forgot">שכחתי סיסמה</button>
+  </div>
+</div>
+
+<!-- מודל שכחתי סיסמה -->
+<div class="modal-overlay" id="modal-forgot">
+  <div class="modal-box">
+    <div id="fp-step1">
+      <div class="modal-title">שכחתי סיסמה</div>
+      <div class="fg"><label>אימייל</label><input type="email" id="fp-email" placeholder="your@email.com"/></div>
+      <div class="err" id="fp-err1"></div>
+      <div class="suc" id="fp-suc1"></div>
+      <div class="modal-actions">
+        <button class="btn-main" id="btn-fp-send">שלח קוד</button>
+        <button class="btn-sec" id="btn-fp-close1">סגור</button>
+      </div>
+    </div>
+    <div id="fp-step2" style="display:none;">
+      <div class="modal-title">איפוס סיסמה</div>
+      <div class="fg"><label>קוד אימות</label><input type="text" id="fp-code" placeholder="123456"/></div>
+      <div class="fg"><label>סיסמה חדשה (לפחות 6 תווים)</label><input type="password" id="fp-newpass" placeholder="••••••••"/></div>
+      <div class="err" id="fp-err2"></div>
+      <div class="suc" id="fp-suc2"></div>
+      <div class="modal-actions">
+        <button class="btn-main" id="btn-fp-reset">אפס סיסמה</button>
+        <button class="btn-sec" id="btn-fp-close2">סגור</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -53,6 +96,7 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
   <div class="appname"><span class="p">Fun</span><span class="t">Together</span></div>
   <div class="tagline">כמה פרטים ומתחילים</div>
   <div class="card">
+  <form id="reg-form" onsubmit="return false;">
     <div class="section-title">פרטים בסיסיים</div>
     <div class="fg"><label>שם / כינוי *</label><input type="text" id="r-name" placeholder="StarSeeker_77"/></div>
     <div class="fg"><label>אימייל *</label><input type="email" id="r-email" placeholder="your@email.com"/></div>
@@ -90,7 +134,8 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
           <option value="brown">חום</option>
           <option value="blue">כחול</option>
           <option value="green">ירוק</option>
-          <option value="hazel">אגוז</option>
+          <option value="black">שחור</option>
+          <option value="honey">דבש</option>
           <option value="gray">אפור</option>
           <option value="other">אחר</option>
         </select>
@@ -101,6 +146,8 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
           <option value="black">שחור</option>
           <option value="brown">חום</option>
           <option value="blonde">בלונד</option>
+          <option value="chestnut">שטני</option>
+          <option value="ginger">ג'ינג'י</option>
           <option value="red">אדום</option>
           <option value="gray">אפור</option>
           <option value="white">לבן</option>
@@ -110,11 +157,22 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
       <div class="fg"><label>צבע עור</label>
         <select id="r-skin">
           <option value="">--</option>
-          <option value="fair">בהיר</option>
-          <option value="medium">בינוני</option>
-          <option value="olive">זית</option>
-          <option value="brown">חום</option>
+          <option value="black">שחור</option>
           <option value="dark">כהה</option>
+          <option value="tan">שזוף</option>
+          <option value="light">בהיר</option>
+          <option value="pale">לבנבן</option>
+          <option value="other">אחר</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label>סגנון שיער</label>
+        <select id="r-hair-style">
+          <option value="">--</option>
+          <option value="short">קצר</option>
+          <option value="long">ארוך</option>
+          <option value="bald">קירח</option>
           <option value="other">אחר</option>
         </select>
       </div>
@@ -130,6 +188,7 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
           <option value="widowed">אלמן/ה</option>
           <option value="separated">פרוד/ה</option>
           <option value="married">נשוי/אה</option>
+          <option value="other">אחר</option>
         </select>
       </div>
       <div class="fg"><label>דת</label>
@@ -156,6 +215,7 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
     <div class="err" id="r-err"></div>
     <button class="btn-main" id="btn-register">יצירת חשבון ✨</button>
     <button class="btn-sec" id="btn-to-login">כבר יש לי חשבון</button>
+  </form>
   </div>
 </div>
 
@@ -187,7 +247,36 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
     <div style="background:#f5f0ff;border-radius:12px;padding:16px;font-size:13px;color:#7c3aed;line-height:1.6;">
       🚧 מסך הצ'אט המלא בפיתוח<br>יהיה מוכן בקרוב!
     </div>
-    <button class="btn-sec" id="btn-logout" style="margin-top:16px;">התנתק</button>
+    <button class="btn-main" id="btn-to-search" style="margin-top:16px;">חיפוש משתמשים 🔍</button>
+    <button class="btn-sec" id="btn-logout">התנתק</button>
+  </div>
+</div>
+
+<!-- חיפוש משתמשים -->
+<div class="screen" id="sc-search">
+  <div class="card search-card">
+    <div class="section-title">חיפוש משתמשים</div>
+    <div class="fg"><label>שם (חיפוש חופשי)</label><input type="text" id="s-name" placeholder="שם או כינוי"/></div>
+    <div class="fg"><label>מספר מזהה (UIN)</label><input type="text" id="s-uin" placeholder="12345678"/></div>
+    <div class="row2">
+      <div class="fg"><label>מגדר</label>
+        <select id="s-gender">
+          <option value="">הכל</option>
+          <option value="male">זכר</option>
+          <option value="female">נקבה</option>
+          <option value="other">אחר</option>
+        </select>
+      </div>
+      <div class="fg"><label>עיר</label><input type="text" id="s-location" placeholder="תל אביב..."/></div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label>גיל מינ׳</label><input type="number" id="s-min-age" min="18" max="120"/></div>
+      <div class="fg"><label>גיל מקס׳</label><input type="number" id="s-max-age" min="18" max="120"/></div>
+    </div>
+    <div class="err" id="s-err"></div>
+    <button class="btn-main" id="btn-search">חפש</button>
+    <button class="btn-sec" id="btn-search-back">חזרה</button>
+    <div class="results-list" id="search-results"></div>
   </div>
 </div>
 
@@ -199,14 +288,109 @@ function showErr(id,msg){var e=document.getElementById(id);e.innerHTML=msg;e.sty
 function hideErr(id){document.getElementById(id).style.display='none';}
 function val(id){return document.getElementById(id).value;}
 
-document.getElementById('btn-to-reg').onclick=function(){go('sc-register');};
+document.getElementById('btn-to-reg').onclick=function(){
+  document.getElementById('reg-form').reset();
+  hideErr('r-err');
+  go('sc-register');
+};
 document.getElementById('btn-to-login').onclick=function(){go('sc-login');};
 document.getElementById('btn-to-main').onclick=function(){go('sc-main');};
+document.getElementById('btn-to-search').onclick=function(){go('sc-search');};
+document.getElementById('btn-search-back').onclick=function(){go('sc-main');};
 document.getElementById('btn-logout').onclick=function(){
   var token=localStorage.getItem('token');
   if(token)unsubscribeFromPush(API,token).catch(function(){});
   localStorage.removeItem('token');
   go('sc-login');
+};
+
+// ── שכחתי סיסמה ──
+function closeForgotModal(){
+  document.getElementById('modal-forgot').classList.remove('active');
+  document.getElementById('fp-step1').style.display='block';
+  document.getElementById('fp-step2').style.display='none';
+  document.getElementById('fp-email').value='';
+  document.getElementById('fp-code').value='';
+  document.getElementById('fp-newpass').value='';
+  hideErr('fp-err1');hideErr('fp-err2');
+  document.getElementById('fp-suc1').style.display='none';
+  document.getElementById('fp-suc2').style.display='none';
+}
+document.getElementById('btn-open-forgot').onclick=function(){
+  document.getElementById('modal-forgot').classList.add('active');
+};
+document.getElementById('btn-fp-close1').onclick=closeForgotModal;
+document.getElementById('btn-fp-close2').onclick=closeForgotModal;
+
+document.getElementById('btn-fp-send').onclick=async function(){
+  hideErr('fp-err1');
+  var email=val('fp-email').trim();
+  if(!email){showErr('fp-err1','נא להכניס אימייל');return;}
+  var btn=this;btn.textContent='שולח...';btn.disabled=true;
+  try{
+    var res=await fetch(API+'/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
+    var data=await res.json();
+    if(!res.ok){showErr('fp-err1',data.error||'שגיאה בשליחת הקוד');return;}
+    document.getElementById('fp-suc1').textContent='קוד אימות נשלח! בדקו את האימייל.';
+    document.getElementById('fp-suc1').style.display='block';
+    document.getElementById('fp-step1').style.display='none';
+    document.getElementById('fp-step2').style.display='block';
+  }catch(e){showErr('fp-err1','שגיאת חיבור לשרת');}
+  finally{btn.textContent='שלח קוד';btn.disabled=false;}
+};
+
+document.getElementById('btn-fp-reset').onclick=async function(){
+  hideErr('fp-err2');
+  var email=val('fp-email').trim(),code=val('fp-code').trim(),newpass=val('fp-newpass');
+  if(!code){showErr('fp-err2','נא להכניס קוד אימות');return;}
+  if(newpass.length<6){showErr('fp-err2','הסיסמה חייבת להיות לפחות 6 תווים');return;}
+  var btn=this;btn.textContent='מאפס...';btn.disabled=true;
+  try{
+    var res=await fetch(API+'/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,code:code,new_password:newpass})});
+    var data=await res.json();
+    if(!res.ok){showErr('fp-err2',data.error||'שגיאה באיפוס הסיסמה');return;}
+    document.getElementById('fp-suc2').textContent='הסיסמה אופסה בהצלחה! ניתן להתחבר.';
+    document.getElementById('fp-suc2').style.display='block';
+    setTimeout(closeForgotModal,1500);
+  }catch(e){showErr('fp-err2','שגיאת חיבור לשרת');}
+  finally{btn.textContent='אפס סיסמה';btn.disabled=false;}
+};
+
+// ── חיפוש משתמשים ──
+function renderResults(users){
+  var box=document.getElementById('search-results');
+  box.innerHTML='';
+  if(!users.length){box.innerHTML='<div class="empty-msg">לא נמצאו תוצאות</div>';return;}
+  users.forEach(function(u){
+    var div=document.createElement('div');
+    div.className='result-item';
+    div.innerHTML='<div class="r-name">'+u.name+'</div>'+
+      '<div class="r-meta">'+(u.age||'')+(u.location?' · '+u.location:'')+'</div>'+
+      '<div class="r-uin">UIN: '+u.uin+'</div>';
+    box.appendChild(div);
+  });
+}
+document.getElementById('btn-search').onclick=async function(){
+  hideErr('s-err');
+  var token=localStorage.getItem('token');
+  if(!token){showErr('s-err','יש להתחבר מחדש');return;}
+  var params=new URLSearchParams();
+  var name=val('s-name').trim(),uin=val('s-uin').trim(),gender=val('s-gender'),
+    location=val('s-location').trim(),minAge=val('s-min-age'),maxAge=val('s-max-age');
+  if(name)params.set('name',name);
+  if(uin)params.set('uin',uin);
+  if(gender)params.set('gender',gender);
+  if(location)params.set('location',location);
+  if(minAge)params.set('min_age',minAge);
+  if(maxAge)params.set('max_age',maxAge);
+  var btn=this;btn.textContent='מחפש...';btn.disabled=true;
+  try{
+    var res=await fetch(API+'/api/users?'+params.toString(),{headers:{'Authorization':'Bearer '+token}});
+    var data=await res.json();
+    if(!res.ok){showErr('s-err',data.error||'שגיאה בחיפוש');return;}
+    renderResults(data.users||[]);
+  }catch(e){showErr('s-err','שגיאת חיבור לשרת');}
+  finally{btn.textContent='חפש';btn.disabled=false;}
 };
 
 document.getElementById('btn-login').onclick=async function(){
@@ -242,6 +426,7 @@ document.getElementById('btn-register').onclick=async function(){
       body_type:val('r-body')||undefined,
       eye_color:val('r-eyes')||undefined,
       hair_color:val('r-hair')||undefined,
+      hair_style:val('r-hair-style')||undefined,
       skin_tone:val('r-skin')||undefined,
       marital_status:val('r-marital')||undefined,
       religion:val('r-religion')||undefined,
