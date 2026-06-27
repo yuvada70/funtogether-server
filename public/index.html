@@ -477,7 +477,10 @@ document.getElementById('btn-register').onclick=async function(){
     }
     document.getElementById('uin-name').textContent='ברוכ/ה הבא/ה, '+data.name+'!';
     document.getElementById('uin-val').textContent=data.uin;
+    localStorage.setItem('token',data.token);
+    document.getElementById('main-hi').textContent='שלום, '+data.name+'! 👋';
     go('sc-uin');
+    subscribeToPush(API,data.token);
   }catch(e){showErr('r-err','❌ לא ניתן להתחבר לשרת');}
   finally{btn.textContent='יצירת חשבון ✨';btn.disabled=false;}
 };
