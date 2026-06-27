@@ -9,6 +9,7 @@ const multer     = require("multer");
 const path       = require("path");
 const fs         = require("fs");
 const webpush    = require("web-push");
+const nodemailer = require("nodemailer");
 
 const app    = express();
 const server = http.createServer(app);
@@ -115,6 +116,31 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   console.warn("VAPID keys not set — push notifications disabled. Generate with: npx web-push generate-vapid-keys");
 }
 
+// ── EMAIL (SMTP) ──
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = process.env.SMTP_PORT || 587;
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
+
+var mailTransporter = null;
+if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+  mailTransporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT),
+    secure: Number(SMTP_PORT) === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
+  });
+} else {
+  console.warn("SMTP not configured — password-reset emails will not be sent. Set SMTP_HOST, SMTP_USER, SMTP_PASS (and optionally SMTP_PORT, SMTP_FROM) in Railway.");
+}
+
+async function sendMail(to, subject, html) {
+  if (!mailTransporter) return false;
+  await mailTransporter.sendMail({ from: SMTP_FROM, to: to, subject: subject, html: html });
+  return true;
+}
+
 function sendPushToUser(uin, payload) {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
   var subs = db.prepare("SELECT * FROM push_subscriptions WHERE uin=?").all(uin);
@@ -167,7 +193,7 @@ app.post("/api/auth/login", async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post("/api/auth/forgot-password", function(req, res) {
+app.post("/api/auth/forgot-password", async function(req, res) {
   try {
     var email = req.body.email;
     if (!email) return res.status(400).json({ error: "Email required" });
@@ -177,7 +203,20 @@ app.post("/api/auth/forgot-password", function(req, res) {
     var expires = Date.now() + 15 * 60 * 1000;
     db.prepare("DELETE FROM reset_codes WHERE email=?").run(email);
     db.prepare("INSERT INTO reset_codes (email, code, expires_at) VALUES (?,?,?)").run(email, code, expires);
-    res.json({ success: true, code: code, name: user.name });
+    var emailSent = false;
+    try {
+      emailSent = await sendMail(email,
+        "קוד לאיפוס סיסמה ב-FunTogether",
+        "<div dir='rtl' style='font-family:sans-serif'>" +
+        "<p>שלום " + user.name + ",</p>" +
+        "<p>קוד האימות לאיפוס הסיסמה שלך הוא:</p>" +
+        "<p style='font-size:28px;font-weight:bold;letter-spacing:4px;'>" + code + "</p>" +
+        "<p>הקוד בתוקף ל-15 דקות. אם לא ביקשת לאפס סיסמה, ניתן להתעלם מהודעה זו.</p>" +
+        "</div>");
+    } catch (mailErr) { console.error("Failed to send reset email:", mailErr.message); }
+    var response = { success: true, name: user.name, email_sent: emailSent };
+    if (!emailSent) response.code = code; // dev fallback when SMTP isn't configured
+    res.json(response);
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 

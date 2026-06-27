@@ -80,6 +80,7 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
   <div class="modal-box">
     <div id="fp-step1">
       <div class="modal-title">שכחתי סיסמה</div>
+      <div style="font-size:12.5px;color:#9b8ab8;margin-bottom:12px;line-height:1.6;">הזן/י את כתובת המייל שאיתה נרשמת. אם הכתובת קיימת במערכת, נשלח אליה קוד אימות בן 6 ספרות.</div>
       <div class="fg"><label>אימייל</label><input type="email" id="fp-email" placeholder="your@email.com"/></div>
       <div class="err" id="fp-err1"></div>
       <div class="suc" id="fp-suc1"></div>
@@ -90,7 +91,8 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
     </div>
     <div id="fp-step2" style="display:none;">
       <div class="modal-title">איפוס סיסמה</div>
-      <div class="fg"><label>קוד אימות</label><input type="text" id="fp-code" placeholder="123456"/></div>
+      <div style="font-size:12.5px;color:#9b8ab8;margin-bottom:12px;line-height:1.6;" id="fp-step2-hint">בדוק/י את תיבת המייל שלך והזן/י כאן את הקוד שקיבלת, ביחד עם הסיסמה החדשה.</div>
+      <div class="fg"><label>קוד אימות (התקבל במייל)</label><input type="text" id="fp-code" placeholder="123456" inputmode="numeric"/></div>
       <div class="fg"><label>סיסמה חדשה (לפחות 6 תווים)</label><input type="password" id="fp-newpass" placeholder="••••••••"/></div>
       <div class="err" id="fp-err2"></div>
       <div class="suc" id="fp-suc2"></div>
@@ -472,7 +474,13 @@ document.getElementById('btn-fp-send').onclick=async function(){
     var res=await fetch(API+'/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
     var data=await res.json();
     if(!res.ok){showErr('fp-err1',data.error||'שגיאה בשליחת הקוד');return;}
-    document.getElementById('fp-suc1').textContent='קוד אימות נשלח! בדקו את האימייל.';
+    if(data.email_sent){
+      document.getElementById('fp-suc1').textContent='קוד אימות נשלח לכתובת המייל שלך. בדקו את תיבת הדואר (כולל תיקיית ספאם).';
+      document.getElementById('fp-step2-hint').textContent='בדוק/י את תיבת המייל שלך והזן/י כאן את הקוד שקיבלת, ביחד עם הסיסמה החדשה.';
+    } else {
+      document.getElementById('fp-suc1').textContent='שירות המייל לא מוגדר בשרת כרגע. לצורך בדיקה, קוד האימות הוא: '+data.code;
+      document.getElementById('fp-step2-hint').textContent='שירות המייל לא מוגדר בשרת — הקוד מוצג כאן לבדיקה בלבד: '+data.code;
+    }
     document.getElementById('fp-suc1').style.display='block';
     document.getElementById('fp-step1').style.display='none';
     document.getElementById('fp-step2').style.display='block';
