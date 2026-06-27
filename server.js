@@ -409,6 +409,24 @@ app.post("/api/messages/send", auth, function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get("/api/conversations", auth, function(req, res) {
+  try {
+    var rows = db.prepare(`
+      SELECT u.uin, u.name,
+        (SELECT content FROM messages m WHERE (m.sender_uin=u.uin AND m.receiver_uin=?) OR (m.sender_uin=? AND m.receiver_uin=u.uin) ORDER BY m.created_at DESC LIMIT 1) AS last_content,
+        (SELECT created_at FROM messages m WHERE (m.sender_uin=u.uin AND m.receiver_uin=?) OR (m.sender_uin=? AND m.receiver_uin=u.uin) ORDER BY m.created_at DESC LIMIT 1) AS last_at
+      FROM users u
+      WHERE u.uin IN (
+        SELECT sender_uin FROM messages WHERE receiver_uin=?
+        UNION
+        SELECT receiver_uin FROM messages WHERE sender_uin=?
+      )
+      ORDER BY last_at DESC
+    `).all(req.user.uin, req.user.uin, req.user.uin, req.user.uin, req.user.uin, req.user.uin);
+    res.json({ conversations: rows });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get("/api/messages/:other", auth, function(req, res) {
   var msgs = db.prepare("SELECT * FROM messages WHERE (sender_uin=? AND receiver_uin=?) OR (sender_uin=? AND receiver_uin=?) ORDER BY created_at ASC")
     .all(req.user.uin, req.params.other, req.params.other, req.user.uin);
