@@ -112,6 +112,19 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
       </div>
     </div>
     <div class="fg"><label>עיר מגורים</label><input type="text" id="r-location" placeholder="תל אביב, חיפה..."/></div>
+    <div class="fg"><label>אזור מגורים</label>
+      <select id="r-region">
+        <option value="">-- בחר --</option>
+        <option value="north">צפון</option>
+        <option value="haifa">חיפה והקריות</option>
+        <option value="center">מרכז</option>
+        <option value="tel_aviv">תל אביב</option>
+        <option value="jerusalem">ירושלים</option>
+        <option value="shfela">שפלה</option>
+        <option value="south">דרום</option>
+        <option value="other">אחר</option>
+      </select>
+    </div>
 
     <div class="section-title">מראה חיצוני <span class="opt">(אופציונלי)</span></div>
     <div class="row2">
@@ -269,6 +282,19 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
       </div>
       <div class="fg"><label>עיר</label><input type="text" id="s-location" placeholder="תל אביב..."/></div>
     </div>
+    <div class="fg"><label>אזור מגורים</label>
+      <select id="s-region">
+        <option value="">הכל</option>
+        <option value="north">צפון</option>
+        <option value="haifa">חיפה והקריות</option>
+        <option value="center">מרכז</option>
+        <option value="tel_aviv">תל אביב</option>
+        <option value="jerusalem">ירושלים</option>
+        <option value="shfela">שפלה</option>
+        <option value="south">דרום</option>
+        <option value="other">אחר</option>
+      </select>
+    </div>
     <div class="row2">
       <div class="fg"><label>גיל מינ׳</label><input type="number" id="s-min-age" min="18" max="120"/></div>
       <div class="fg"><label>גיל מקס׳</label><input type="number" id="s-max-age" min="18" max="120"/></div>
@@ -295,7 +321,10 @@ document.getElementById('btn-to-reg').onclick=function(){
 };
 document.getElementById('btn-to-login').onclick=function(){go('sc-login');};
 document.getElementById('btn-to-main').onclick=function(){go('sc-main');};
-document.getElementById('btn-to-search').onclick=function(){go('sc-search');};
+document.getElementById('btn-to-search').onclick=function(){
+  if(!localStorage.getItem('token')){go('sc-login');return;}
+  go('sc-search');
+};
 document.getElementById('btn-search-back').onclick=function(){go('sc-main');};
 document.getElementById('btn-logout').onclick=function(){
   var token=localStorage.getItem('token');
@@ -364,8 +393,10 @@ function renderResults(users){
   users.forEach(function(u){
     var div=document.createElement('div');
     div.className='result-item';
+    var regionLabels={north:'צפון',haifa:'חיפה והקריות',center:'מרכז',tel_aviv:'תל אביב',jerusalem:'ירושלים',shfela:'שפלה',south:'דרום',other:'אחר'};
+    var regionTxt=u.region?(regionLabels[u.region]||u.region):'';
     div.innerHTML='<div class="r-name">'+u.name+'</div>'+
-      '<div class="r-meta">'+(u.age||'')+(u.location?' · '+u.location:'')+'</div>'+
+      '<div class="r-meta">'+(u.age||'')+(u.location?' · '+u.location:'')+(regionTxt?' · '+regionTxt:'')+'</div>'+
       '<div class="r-uin">UIN: '+u.uin+'</div>';
     box.appendChild(div);
   });
@@ -373,19 +404,21 @@ function renderResults(users){
 document.getElementById('btn-search').onclick=async function(){
   hideErr('s-err');
   var token=localStorage.getItem('token');
-  if(!token){showErr('s-err','יש להתחבר מחדש');return;}
+  if(!token){localStorage.removeItem('token');go('sc-login');return;}
   var params=new URLSearchParams();
   var name=val('s-name').trim(),uin=val('s-uin').trim(),gender=val('s-gender'),
-    location=val('s-location').trim(),minAge=val('s-min-age'),maxAge=val('s-max-age');
+    location=val('s-location').trim(),region=val('s-region'),minAge=val('s-min-age'),maxAge=val('s-max-age');
   if(name)params.set('name',name);
   if(uin)params.set('uin',uin);
   if(gender)params.set('gender',gender);
   if(location)params.set('location',location);
+  if(region)params.set('region',region);
   if(minAge)params.set('min_age',minAge);
   if(maxAge)params.set('max_age',maxAge);
   var btn=this;btn.textContent='מחפש...';btn.disabled=true;
   try{
     var res=await fetch(API+'/api/users?'+params.toString(),{headers:{'Authorization':'Bearer '+token}});
+    if(res.status===401||res.status===403){localStorage.removeItem('token');go('sc-login');return;}
     var data=await res.json();
     if(!res.ok){showErr('s-err',data.error||'שגיאה בחיפוש');return;}
     renderResults(data.users||[]);
@@ -422,6 +455,7 @@ document.getElementById('btn-register').onclick=async function(){
   try{
     var body={name:name,email:email,password:pass,age:age,gender:gender,
       location:val('r-location').trim()||undefined,
+      region:val('r-region')||undefined,
       height:val('r-height')?parseInt(val('r-height')):undefined,
       body_type:val('r-body')||undefined,
       eye_color:val('r-eyes')||undefined,

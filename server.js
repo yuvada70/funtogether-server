@@ -64,6 +64,7 @@ try { db.exec("ALTER TABLE users ADD COLUMN photo2 TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN photo3 TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN religion_attitude TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN hair_style TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN region TEXT"); } catch(e) {}
 
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
@@ -142,11 +143,11 @@ app.post("/api/auth/register", async function(req, res) {
       return res.status(409).json({ error: "Email already registered" });
     var uin = generateUIN();
     var hash = await bcrypt.hash(b.password, 12);
-    db.prepare(`INSERT INTO users (uin,name,email,password_hash,age,gender,location,height,body_type,
+    db.prepare(`INSERT INTO users (uin,name,email,password_hash,age,gender,location,region,height,body_type,
       eye_color,hair_color,hair_style,skin_tone,marital_status,religion,religion_attitude,smoking,bio)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
       uin,b.name,b.email,hash,b.age,b.gender,
-      b.location||null,b.height||null,b.body_type||null,b.eye_color||null,
+      b.location||null,b.region||null,b.height||null,b.body_type||null,b.eye_color||null,
       b.hair_color||null,b.hair_style||null,b.skin_tone||null,b.marital_status||null,
       b.religion||null,b.religion_attitude||null,b.smoking||null,b.bio||null);
     var token = jwt.sign({ uin:uin, name:b.name }, JWT_SECRET, { expiresIn:"30d" });
@@ -228,11 +229,12 @@ app.patch("/api/users/me", auth, function(req, res) {
     var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
     if (!user) return res.status(404).json({ error: "Not found" });
     var b = req.body;
-    db.prepare(`UPDATE users SET name=?,age=?,location=?,height=?,body_type=?,
+    db.prepare(`UPDATE users SET name=?,age=?,location=?,region=?,height=?,body_type=?,
       eye_color=?,hair_color=?,hair_style=?,skin_tone=?,marital_status=?,religion=?,religion_attitude=?,smoking=?,bio=?
       WHERE uin=?`).run(
       b.name||user.name, b.age||user.age,
       b.location!==undefined?b.location:user.location,
+      b.region!==undefined?b.region:user.region,
       b.height!==undefined?b.height:user.height,
       b.body_type!==undefined?b.body_type:user.body_type,
       b.eye_color!==undefined?b.eye_color:user.eye_color,
@@ -329,7 +331,7 @@ app.post("/api/users/report", auth, function(req, res) {
 app.get("/api/users", auth, function(req, res) {
   try {
     var q = req.query;
-    var sql = `SELECT uin,name,age,gender,location,height,body_type,eye_color,hair_color,hair_style,
+    var sql = `SELECT uin,name,age,gender,location,region,height,body_type,eye_color,hair_color,hair_style,
       skin_tone,marital_status,religion,smoking,bio,photo1,photo2,photo3
       FROM users WHERE uin!=?
       AND uin NOT IN (SELECT blocked_uin FROM blocks WHERE blocker_uin=?)
@@ -337,6 +339,7 @@ app.get("/api/users", auth, function(req, res) {
     var params = [req.user.uin, req.user.uin, req.user.uin];
     if (q.gender)   { sql += " AND gender=?";       params.push(q.gender); }
     if (q.location) { sql += " AND location LIKE ?"; params.push("%"+q.location+"%"); }
+    if (q.region)   { sql += " AND region=?";        params.push(q.region); }
     if (q.min_age)  { sql += " AND age>=?";          params.push(parseInt(q.min_age)); }
     if (q.max_age)  { sql += " AND age<=?";          params.push(parseInt(q.max_age)); }
     if (q.name)     { sql += " AND name LIKE ?";     params.push("%"+q.name+"%"); }
@@ -349,7 +352,7 @@ app.get("/api/users", auth, function(req, res) {
 // ── GET USER BY UIN — חייב לבוא אחרון! ──
 app.get("/api/users/:uin", auth, function(req, res) {
   try {
-    var user = db.prepare(`SELECT uin,name,age,gender,location,height,body_type,
+    var user = db.prepare(`SELECT uin,name,age,gender,location,region,height,body_type,
       eye_color,hair_color,hair_style,skin_tone,marital_status,religion,religion_attitude,
       smoking,bio,photo1,photo2,photo3 FROM users WHERE uin=?`).get(req.params.uin);
     if (!user) return res.status(404).json({ error: "Not found" });
