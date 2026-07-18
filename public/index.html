@@ -51,8 +51,12 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
 .msg-bubble{max-width:75%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;}
 .msg-mine{align-self:flex-start;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;}
 .msg-theirs{align-self:flex-end;background:#fff;border:1px solid #ede8f8;color:#1a1a1a;}
-.chat-input-row{display:flex;gap:8px;}
-.chat-input-row input{flex:1;}
+.chat-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1.5px solid #ede8f8;}
+.chat-header-logo{font-family:'Poppins',sans-serif;font-size:15px;font-weight:900;white-space:nowrap;}.chat-header-logo .p{color:#7c3aed;}.chat-header-logo .t{color:#1a1a1a;}
+.chat-partner{font-size:14px;font-weight:700;color:#7c3aed;flex:1;text-align:right;}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end;}
+.chat-input-row textarea{flex:1;padding:10px 14px;border:1.5px solid #e8e3f0;border-radius:12px;font-family:inherit;font-size:13px;color:#1a1a1a;outline:none;resize:none;min-height:48px;max-height:120px;line-height:1.5;}
+.chat-input-row textarea:focus{border-color:#7c3aed;}
 .send-msg-btn{background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border:none;border-radius:12px;padding:0 18px;font-size:13px;font-weight:700;cursor:pointer;}
 .result-actions{margin-top:8px;display:flex;}
 .msg-btn{background:none;border:1.5px solid #7c3aed;color:#7c3aed;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}
@@ -331,11 +335,14 @@ body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
 <!-- שיחה -->
 <div class="screen" id="sc-chat">
   <div class="card search-card">
-    <div class="section-title" id="chat-with-name">שיחה</div>
+    <div class="chat-header">
+      <div class="chat-header-logo"><span class="p">Fun</span><span class="t">Together</span></div>
+      <div class="chat-partner" id="chat-with-name">שיחה</div>
+    </div>
     <div class="chat-thread" id="chat-thread"></div>
     <div class="err" id="chat-err"></div>
     <div class="chat-input-row">
-      <input type="text" id="chat-input" placeholder="הקלד/י הודעה..."/>
+      <textarea id="chat-input" placeholder="הקלד/י הודעה... (Enter לשליחה, Shift+Enter לשורה חדשה)" rows="2"></textarea>
       <button class="send-msg-btn" id="btn-chat-send">שלח</button>
     </div>
     <button class="btn-sec" id="btn-chat-back">חזרה</button>
@@ -561,10 +568,14 @@ document.getElementById('btn-chat-send').onclick=function(){
   if(!content||!currentChatUin)return;
   ensureSocket(token).emit('send_message',{recipientUin:currentChatUin,content:content});
   appendMsg(content,true);
-  document.getElementById('chat-input').value='';
+  var inp=document.getElementById('chat-input');inp.value='';inp.style.height='';inp.focus();
 };
 document.getElementById('chat-input').addEventListener('keydown',function(e){
-  if(e.key==='Enter')document.getElementById('btn-chat-send').click();
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();document.getElementById('btn-chat-send').click();}
+});
+document.getElementById('chat-input').addEventListener('input',function(){
+  this.style.height='auto';
+  this.style.height=Math.min(this.scrollHeight,120)+'px';
 });
 document.getElementById('btn-chat-back').onclick=function(){currentChatUin=null;go('sc-chats');};
 
@@ -811,6 +822,7 @@ document.getElementById('btn-login').onclick=async function(){
     if(!res.ok){showErr('l-err',data.error||'שגיאה בכניסה');return;}
     localStorage.setItem('token',data.token);
     document.getElementById('main-hi').textContent='שלום, '+data.name+'! 👋';
+    ensureSocket(data.token);
     go('sc-main');
     subscribeToPush(API,data.token);
   }catch(e){showErr('l-err','שגיאת חיבור לשרת');}
@@ -853,6 +865,7 @@ document.getElementById('btn-register').onclick=async function(){
     document.getElementById('uin-val').textContent=data.uin;
     localStorage.setItem('token',data.token);
     document.getElementById('main-hi').textContent='שלום, '+data.name+'! 👋';
+    ensureSocket(data.token);
     go('sc-uin');
     subscribeToPush(API,data.token);
   }catch(e){showErr('r-err','❌ לא ניתן להתחבר לשרת');}
