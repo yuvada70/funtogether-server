@@ -520,6 +520,7 @@ document.getElementById('btn-logout').onclick=function(){
   if(token)unsubscribeFromPush(API,token).catch(function(){});
   localStorage.removeItem('token');
   if(socket){socket.disconnect();socket=null;}
+  unreadCounts={};updateChatBadge();
   go('sc-login');
 };
 
@@ -527,12 +528,30 @@ document.getElementById('btn-logout').onclick=function(){
 var socket=null;
 var currentChatUin=null;
 var myName=null;
+var unreadCounts={};
+function updateChatBadge(){
+  var total=Object.values(unreadCounts).reduce(function(a,b){return a+b;},0);
+  var btn=document.getElementById('btn-to-chats');
+  if(total>0){btn.textContent='הצ\'אטים שלי 💬 ('+total+')';}
+  else{btn.textContent='הצ\'אטים שלי 💬';}
+}
 function ensureSocket(token){
   if(socket)return socket;
   socket=io(API,{auth:{token:token}});
   socket.on('new_message',function(data){
-    if(currentChatUin&&data.sender_uin===currentChatUin){
+    var suid=data.sender_uin;
+    if(currentChatUin&&suid===currentChatUin){
+      // user is in chat with this sender — show immediately
       appendMsg(data.content,false);
+    } else {
+      // user is elsewhere — track unread and refresh conversations list if visible
+      unreadCounts[suid]=(unreadCounts[suid]||0)+1;
+      updateChatBadge();
+      var chatsScreen=document.getElementById('sc-chats');
+      if(chatsScreen&&chatsScreen.classList.contains('active')){
+        var t2=localStorage.getItem('token');
+        if(t2){fetch(API+'/api/conversations',{headers:{'Authorization':'Bearer '+t2}}).then(function(r){return r.json();}).then(function(d){renderChats(d.conversations||[]);}).catch(function(){});}
+      }
     }
   });
   return socket;
@@ -549,6 +568,8 @@ async function openChat(uin,name){
   var token=localStorage.getItem('token');
   if(!token){go('sc-login');return;}
   currentChatUin=uin;
+  delete unreadCounts[uin];
+  updateChatBadge();
   document.getElementById('chat-with-name').textContent='שיחה עם '+name;
   document.getElementById('chat-thread').innerHTML='';
   hideErr('chat-err');
