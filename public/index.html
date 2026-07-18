@@ -519,6 +519,7 @@ document.getElementById('btn-logout').onclick=function(){
   var token=localStorage.getItem('token');
   if(token)unsubscribeFromPush(API,token).catch(function(){});
   localStorage.removeItem('token');
+  stopChatPolling();
   if(socket){socket.disconnect();socket=null;}
   unreadCounts={};updateChatBadge();
   go('sc-login');
@@ -529,6 +530,9 @@ var socket=null;
 var currentChatUin=null;
 var myName=null;
 var unreadCounts={};
+var chatPollTimer=null;
+var lastMsgCount=0;
+
 function updateChatBadge(){
   var total=Object.values(unreadCounts).reduce(function(a,b){return a+b;},0);
   var btn=document.getElementById('btn-to-chats');
@@ -537,14 +541,12 @@ function updateChatBadge(){
 }
 function ensureSocket(token){
   if(socket)return socket;
-  socket=io(API,{auth:{token:token}});
+  socket=io(API,{auth:{token:token},transports:['websocket','polling']});
   socket.on('new_message',function(data){
-    var suid=data.sender_uin;
-    if(currentChatUin&&suid===currentChatUin){
-      // user is in chat with this sender — show immediately
+    var suid=String(data.sender_uin);
+    if(currentChatUin&&suid===String(currentChatUin)){
       appendMsg(data.content,false);
     } else {
-      // user is elsewhere — track unread and refresh conversations list if visible
       unreadCounts[suid]=(unreadCounts[suid]||0)+1;
       updateChatBadge();
       var chatsScreen=document.getElementById('sc-chats');
@@ -564,11 +566,33 @@ function appendMsg(content,mine){
   thread.appendChild(div);
   thread.scrollTop=thread.scrollHeight;
 }
+function startChatPolling(uin,token){
+  stopChatPolling();
+  chatPollTimer=setInterval(async function(){
+    if(!currentChatUin)return;
+    try{
+      var r=await fetch(API+'/api/messages/'+uin,{headers:{'Authorization':'Bearer '+token}});
+      if(!r.ok)return;
+      var d=await r.json();
+      var msgs=d.messages||[];
+      if(msgs.length>lastMsgCount){
+        var thread=document.getElementById('chat-thread');
+        thread.innerHTML='';
+        msgs.forEach(function(m){appendMsg(m.content,m.sender_uin!==uin);});
+        lastMsgCount=msgs.length;
+      }
+    }catch(e){}
+  },3000);
+}
+function stopChatPolling(){
+  if(chatPollTimer){clearInterval(chatPollTimer);chatPollTimer=null;}
+}
 async function openChat(uin,name){
   var token=localStorage.getItem('token');
   if(!token){go('sc-login');return;}
-  currentChatUin=uin;
-  delete unreadCounts[uin];
+  stopChatPolling();
+  currentChatUin=String(uin);
+  delete unreadCounts[String(uin)];
   updateChatBadge();
   document.getElementById('chat-with-name').textContent='שיחה עם '+name;
   document.getElementById('chat-thread').innerHTML='';
@@ -578,8 +602,11 @@ async function openChat(uin,name){
     var res=await fetch(API+'/api/messages/'+uin,{headers:{'Authorization':'Bearer '+token}});
     if(res.status===401||res.status===403){localStorage.removeItem('token');go('sc-login');return;}
     var data=await res.json();
-    (data.messages||[]).forEach(function(m){appendMsg(m.content,m.sender_uin!==uin);});
+    var msgs=data.messages||[];
+    msgs.forEach(function(m){appendMsg(m.content,m.sender_uin!==uin);});
+    lastMsgCount=msgs.length;
   }catch(e){showErr('chat-err','שגיאת חיבור לשרת');}
+  startChatPolling(uin,token);
   go('sc-chat');
 }
 document.getElementById('btn-chat-send').onclick=function(){
@@ -587,8 +614,9 @@ document.getElementById('btn-chat-send').onclick=function(){
   if(!token){go('sc-login');return;}
   var content=val('chat-input').trim();
   if(!content||!currentChatUin)return;
-  ensureSocket(token).emit('send_message',{recipientUin:currentChatUin,content:content});
+  ensureSocket(token).emit('send_message',{recipientUin:String(currentChatUin),content:content});
   appendMsg(content,true);
+  lastMsgCount++;
   var inp=document.getElementById('chat-input');inp.value='';inp.style.height='';inp.focus();
 };
 document.getElementById('chat-input').addEventListener('keydown',function(e){
@@ -598,7 +626,7 @@ document.getElementById('chat-input').addEventListener('input',function(){
   this.style.height='auto';
   this.style.height=Math.min(this.scrollHeight,120)+'px';
 });
-document.getElementById('btn-chat-back').onclick=function(){currentChatUin=null;go('sc-chats');};
+document.getElementById('btn-chat-back').onclick=function(){stopChatPolling();currentChatUin=null;go('sc-chats');};
 
 function renderChats(list){
   var box=document.getElementById('chats-list');
