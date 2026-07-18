@@ -66,6 +66,8 @@ try { db.exec("ALTER TABLE users ADD COLUMN photo3 TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN religion_attitude TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN hair_style TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN region TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN city TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN hair_type TEXT"); } catch(e) {}
 
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
@@ -169,12 +171,12 @@ app.post("/api/auth/register", async function(req, res) {
       return res.status(409).json({ error: "Email already registered" });
     var uin = generateUIN();
     var hash = await bcrypt.hash(b.password, 12);
-    db.prepare(`INSERT INTO users (uin,name,email,password_hash,age,gender,location,region,height,body_type,
-      eye_color,hair_color,hair_style,skin_tone,marital_status,religion,religion_attitude,smoking,bio)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    db.prepare(`INSERT INTO users (uin,name,email,password_hash,age,gender,location,region,city,height,body_type,
+      eye_color,hair_color,hair_style,hair_type,skin_tone,marital_status,religion,religion_attitude,smoking,bio)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
       uin,b.name,b.email,hash,b.age,b.gender,
-      b.location||null,b.region||null,b.height||null,b.body_type||null,b.eye_color||null,
-      b.hair_color||null,b.hair_style||null,b.skin_tone||null,b.marital_status||null,
+      b.location||null,b.region||null,b.city||null,b.height||null,b.body_type||null,b.eye_color||null,
+      b.hair_color||null,b.hair_style||null,b.hair_type||null,b.skin_tone||null,b.marital_status||null,
       b.religion||null,b.religion_attitude||null,b.smoking||null,b.bio||null);
     var token = jwt.sign({ uin:uin, name:b.name }, JWT_SECRET, { expiresIn:"30d" });
     res.status(201).json({ uin:uin, name:b.name, token:token });
@@ -268,17 +270,19 @@ app.patch("/api/users/me", auth, function(req, res) {
     var user = db.prepare("SELECT * FROM users WHERE uin=?").get(req.user.uin);
     if (!user) return res.status(404).json({ error: "Not found" });
     var b = req.body;
-    db.prepare(`UPDATE users SET name=?,age=?,location=?,region=?,height=?,body_type=?,
-      eye_color=?,hair_color=?,hair_style=?,skin_tone=?,marital_status=?,religion=?,religion_attitude=?,smoking=?,bio=?
+    db.prepare(`UPDATE users SET name=?,age=?,location=?,region=?,city=?,height=?,body_type=?,
+      eye_color=?,hair_color=?,hair_style=?,hair_type=?,skin_tone=?,marital_status=?,religion=?,religion_attitude=?,smoking=?,bio=?
       WHERE uin=?`).run(
       b.name||user.name, b.age||user.age,
       b.location!==undefined?b.location:user.location,
       b.region!==undefined?b.region:user.region,
+      b.city!==undefined?b.city:user.city,
       b.height!==undefined?b.height:user.height,
       b.body_type!==undefined?b.body_type:user.body_type,
       b.eye_color!==undefined?b.eye_color:user.eye_color,
       b.hair_color!==undefined?b.hair_color:user.hair_color,
       b.hair_style!==undefined?b.hair_style:user.hair_style,
+      b.hair_type!==undefined?b.hair_type:user.hair_type,
       b.skin_tone!==undefined?b.skin_tone:user.skin_tone,
       b.marital_status!==undefined?b.marital_status:user.marital_status,
       b.religion!==undefined?b.religion:user.religion,
@@ -370,8 +374,8 @@ app.post("/api/users/report", auth, function(req, res) {
 app.get("/api/users", auth, function(req, res) {
   try {
     var q = req.query;
-    var sql = `SELECT uin,name,age,gender,location,region,height,body_type,eye_color,hair_color,hair_style,
-      skin_tone,marital_status,religion,smoking,bio,photo1,photo2,photo3
+    var sql = `SELECT uin,name,age,gender,location,region,city,height,body_type,eye_color,hair_color,hair_style,hair_type,
+      skin_tone,marital_status,religion,religion_attitude,smoking,bio,photo1,photo2,photo3
       FROM users WHERE uin!=?
       AND uin NOT IN (SELECT blocked_uin FROM blocks WHERE blocker_uin=?)
       AND uin NOT IN (SELECT blocker_uin FROM blocks WHERE blocked_uin=?)`;
@@ -391,8 +395,8 @@ app.get("/api/users", auth, function(req, res) {
 // ── GET USER BY UIN — חייב לבוא אחרון! ──
 app.get("/api/users/:uin", auth, function(req, res) {
   try {
-    var user = db.prepare(`SELECT uin,name,age,gender,location,region,height,body_type,
-      eye_color,hair_color,hair_style,skin_tone,marital_status,religion,religion_attitude,
+    var user = db.prepare(`SELECT uin,name,age,gender,location,region,city,height,body_type,
+      eye_color,hair_color,hair_style,hair_type,skin_tone,marital_status,religion,religion_attitude,
       smoking,bio,photo1,photo2,photo3 FROM users WHERE uin=?`).get(req.params.uin);
     if (!user) return res.status(404).json({ error: "Not found" });
     res.json(user);
