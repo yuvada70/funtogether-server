@@ -188,14 +188,6 @@ textarea.finput{resize:none;}
 .umodal-block{flex:1;padding:10px;border-radius:12px;border:1.5px solid #fecaca;background:#fff5f5;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
 .umodal-report{flex:1;padding:10px;border-radius:12px;border:1.5px solid #fed7aa;background:#fff9f0;color:#f97316;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
 </style>
-<script>
-// Unregister old service workers
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for (var reg of registrations) { reg.unregister(); }
-  });
-}
-</script>
 </head>
 <body>
 
@@ -753,6 +745,59 @@ document.addEventListener("DOMContentLoaded", function() {
     Object.keys(chats).forEach(function(k) { unread += (chats[k].unread || 0); });
   }
 
+  // ── WEB PUSH (התראות גם כשהאפליקציה סגורה) ──
+  function urlBase64ToUint8Array(base64String) {
+    var padding = "=".repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    var raw = atob(base64);
+    var arr = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+  function subscribeToPush() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
+    var permP = Notification.permission === "granted" ? Promise.resolve("granted") : Notification.requestPermission();
+    Promise.resolve(permP).then(function(perm) {
+      if (perm !== "granted") return;
+      return navigator.serviceWorker.register("/sw.js").then(function(reg) {
+        return fetch(API + "/api/push/vapid-public-key").then(function(r) {
+          if (!r.ok) throw new Error("push not configured on server");
+          return r.json();
+        }).then(function(keyData) {
+          return reg.pushManager.getSubscription().then(function(sub) {
+            if (sub) return sub;
+            return reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+            });
+          });
+        }).then(function(sub) {
+          return fetch(API + "/api/push/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
+            body: JSON.stringify({ subscription: sub.toJSON() })
+          });
+        });
+      });
+    }).catch(function() {});
+  }
+  function unsubscribeFromPush() {
+    if (!("serviceWorker" in navigator)) return;
+    var authTok = tok;
+    navigator.serviceWorker.getRegistration("/sw.js").then(function(reg) {
+      if (!reg) return;
+      reg.pushManager.getSubscription().then(function(sub) {
+        if (!sub) return;
+        fetch(API + "/api/push/unsubscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + authTok },
+          body: JSON.stringify({ endpoint: sub.endpoint })
+        }).catch(function() {});
+        sub.unsubscribe();
+      });
+    }).catch(function() {});
+  }
+
   // ── SOCKET ──
   var socket = null;
   function initSocket() {
@@ -1291,7 +1336,7 @@ document.addEventListener("DOMContentLoaded", function() {
       tok = res.d.token; me = res.d;
       localStorage.setItem("ft_tok", tok); localStorage.setItem("ft_me", JSON.stringify(me));
       showApp(); loadProfile();
-      initSocket(); startPolling(); requestNotifPermission();
+      initSocket(); startPolling(); requestNotifPermission(); subscribeToPush();
     }).catch(function() { errEl.textContent = "שגיאת חיבור לשרת"; errEl.style.display = "block"; })
     .finally(function() { btn.textContent = "כניסה"; btn.disabled = false; });
   }
@@ -1444,7 +1489,7 @@ document.addEventListener("DOMContentLoaded", function() {
   ge("btn-toreg").addEventListener("click", function() { showPage("pg-reg"); });
   ge("btn-reg").addEventListener("click", doRegister);
   ge("btn-tologin").addEventListener("click", function() { showPage("pg-login"); });
-  ge("btn-toapp").addEventListener("click", function() { showApp(); loadProfile(); initSocket(); startPolling(); requestNotifPermission(); });
+  ge("btn-toapp").addEventListener("click", function() { showApp(); loadProfile(); initSocket(); startPolling(); requestNotifPermission(); subscribeToPush(); });
   ge("btn-search").addEventListener("click", doSearch);
   ge("btn-back").addEventListener("click", function() {
     ge("cwin").classList.remove("on");
@@ -1456,6 +1501,7 @@ document.addEventListener("DOMContentLoaded", function() {
   ge("btn-save").addEventListener("click", doSave);
   if (ge("btn-change-pass")) ge("btn-change-pass").addEventListener("click", doChangePass);
   ge("btn-logout").addEventListener("click", function() {
+    unsubscribeFromPush();
     if (socket) { socket.disconnect(); socket = null; }
     stopPolling();
     localStorage.removeItem("ft_tok"); localStorage.removeItem("ft_me");
@@ -1475,7 +1521,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.removeEventListener("click", onFirstGesture);
   });
 
-  if (tok && me) { showApp(); showTab("search"); loadProfile(); initSocket(); startPolling(); requestNotifPermission(); }
+  if (tok && me) { showApp(); showTab("search"); loadProfile(); initSocket(); startPolling(); requestNotifPermission(); subscribeToPush(); }
 })();
 </script>
 
