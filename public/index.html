@@ -302,7 +302,10 @@ if ('serviceWorker' in navigator) {
           <select id="r-marital" class="finput"><option value="">--</option><option value="single">רווק/ה</option><option value="married">נשוי/ה</option><option value="divorced">גרוש/ה</option><option value="widowed">אלמן/ה</option><option value="separated">פרוד/ה</option></select>
         </div>
         <div><span class="flabel">דת</span>
-          <select id="r-religion" class="finput"><option value="">--</option><option value="secular">חילוני</option><option value="jewish">יהודי</option><option value="muslim">מוסלמי</option><option value="christian">נוצרי</option><option value="druze">דרוזי</option><option value="other">אחר</option></select>
+          <select id="r-religion" class="finput"><option value="">--</option><option value="jewish">יהודי</option><option value="christian">נוצרי</option><option value="druze">דרוזי</option><option value="muslim">מוסלמי</option><option value="other">אחר</option></select>
+        </div>
+        <div><span class="flabel">זיקה לדת</span>
+          <select id="r-religion-attitude" class="finput"><option value="">--</option><option value="religious">דתי</option><option value="haredi">חרדי</option><option value="traditional">מסורתי</option><option value="secular">חילוני</option><option value="other">אחר</option></select>
         </div>
       </div>
       <span class="flabel">עישון</span>
@@ -508,12 +511,12 @@ if ('serviceWorker' in navigator) {
             <div><span class="flabel">מצב משפחתי</span>
               <select id="e-marital" class="finput"><option value="">--</option><option value="single">רווק/ה</option><option value="married">נשוי/ה</option><option value="divorced">גרוש/ה</option><option value="widowed">אלמן/ה</option><option value="separated">פרוד/ה</option></select>
             </div>
-            <div><span class="flabel">לאום</span>
-              <select id="e-religion" class="finput"><option value="">--</option><option value="secular">חילוני</option><option value="jewish">יהודי</option><option value="muslim">מוסלמי</option><option value="christian">נוצרי</option><option value="druze">דרוזי</option><option value="other">אחר</option></select>
+            <div><span class="flabel">דת</span>
+              <select id="e-religion" class="finput"><option value="">--</option><option value="jewish">יהודי</option><option value="christian">נוצרי</option><option value="druze">דרוזי</option><option value="muslim">מוסלמי</option><option value="other">אחר</option></select>
             </div>
           </div>
-          <span class="flabel">יחס לדת</span>
-          <select id="e-religion-attitude" class="finput"><option value="">--</option><option value="secular">חילוני</option><option value="traditional">מסורתי</option><option value="religious">דתי</option><option value="other">אחר</option></select>
+          <span class="flabel">זיקה לדת</span>
+          <select id="e-religion-attitude" class="finput"><option value="">--</option><option value="religious">דתי</option><option value="haredi">חרדי</option><option value="traditional">מסורתי</option><option value="secular">חילוני</option><option value="other">אחר</option></select>
 
           <div class="ok" id="p-ok">&#9989; הפרופיל עודכן בהצלחה!</div>
           <button class="btn" id="btn-save">שמור שינויים</button>
@@ -692,8 +695,8 @@ document.addEventListener("DOMContentLoaded", function() {
   var LBL = {
     gender:            { male:"זכר", female:"נקבה", other:"אחר" },
     body_type:         { slim:"רזה", average:"בינוני", athletic:"ספורטיבי", heavy:"שמן" },
-    religion:          { secular:"חילוני", jewish:"יהודי", muslim:"מוסלמי", christian:"נוצרי", druze:"דרוזי", other:"אחר" },
-    religion_attitude: { secular:"חילוני", traditional:"מסורתי", religious:"דתי", other:"אחר" },
+    religion:          { jewish:"יהודי", christian:"נוצרי", druze:"דרוזי", muslim:"מוסלמי", other:"אחר", secular:"חילוני" },
+    religion_attitude: { religious:"דתי", haredi:"חרדי", traditional:"מסורתי", secular:"חילוני", other:"אחר" },
     smoking:           { no:"לא מעשן/ת", occasionally:"לפעמים", yes:"מעשן/ת" },
     eye_color:         { brown:"חום", blue:"כחול", green:"ירוק", black:"שחור", honey:"דבש", gray:"אפור", other:"אחר", hazel:"אגוז" },
     hair_color:        { black:"שחור", brown:"חום", blonde:"בלונד", red:"אדום", gray:"אפור", satani:"שטני", other:"אחר" },
@@ -707,9 +710,53 @@ document.addEventListener("DOMContentLoaded", function() {
   function gv(id) { return ge(id).value; }
   function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
+  // ── התראות: צליל + התראת דפדפן ──
+  var audioCtx = null;
+  function unlockAudio() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) {}
+  }
+  function playPing() {
+    try {
+      unlockAudio();
+      if (!audioCtx) return;
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.type = "sine"; o.frequency.setValueAtTime(880, audioCtx.currentTime);
+      o.frequency.setValueAtTime(1180, audioCtx.currentTime + 0.12);
+      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+      o.start(); o.stop(audioCtx.currentTime + 0.42);
+    } catch (e) {}
+  }
+  function requestNotifPermission() {
+    try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch (e) {}
+  }
+  function notifyIncoming(fromName, text) {
+    playPing();
+    try {
+      if (navigator.vibrate) navigator.vibrate(120);
+    } catch (e) {}
+    try {
+      if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+        var n = new Notification(fromName || "הודעה חדשה", { body: text || "", icon: "/icon-192.png", tag: "ft-msg" });
+        setTimeout(function() { try { n.close(); } catch (e) {} }, 6000);
+      }
+    } catch (e) {}
+  }
+
+  function recomputeUnread() {
+    unread = 0;
+    Object.keys(chats).forEach(function(k) { unread += (chats[k].unread || 0); });
+  }
+
   // ── SOCKET ──
   var socket = null;
   function initSocket() {
+    if (typeof io === "undefined") return; // אם ספריית הסוקט לא נטענה — נסתמך על ה-polling
     if (socket) socket.disconnect();
     socket = io("https://funtogether-server-production.up.railway.app", {
       auth: { token: tok }
@@ -717,10 +764,14 @@ document.addEventListener("DOMContentLoaded", function() {
     socket.on("new_message", function(data) {
       var uin = data.sender_uin;
       if (!chats[uin]) chats[uin] = { name: data.sender_name || uin, msgs: [] };
+      // מניעת כפילות מול ה-polling: התעלם אם ההודעה כבר קיימת
+      var last = chats[uin].msgs[chats[uin].msgs.length - 1];
+      if (last && last.dir === "in" && last.text === data.content) { return; }
       var d = new Date(), t = d.getHours() + ":" + (d.getMinutes()+"").padStart(2,"0");
       chats[uin].msgs.push({ dir: "in", text: data.content, time: t });
       if (activeUin === uin) { renderMsgs(); }
-      else { unread++; updateBadge(); }
+      else { chats[uin].unread = (chats[uin].unread || 0) + 1; recomputeUnread(); updateBadge(); }
+      notifyIncoming(chats[uin].name, data.content);
       renderCList();
     });
     socket.on("typing", function(data) {
@@ -735,8 +786,53 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
+  // ── POLLING (גיבוי לקבלת הודעות אונליין גם אם הסוקט לא זמין) ──
+  var pollTimer = null;
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(pollTick, 3500);
+  }
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+  function pollTick() {
+    if (!tok || !me) { stopPolling(); return; }
+    var keys = Object.keys(chats);
+    for (var i = 0; i < keys.length; i++) {
+      pollChat(keys[i], keys[i] === activeUin);
+    }
+  }
+  function pollChat(uin, isActive) {
+    fetch(API + "/api/messages/" + uin, { headers: { Authorization: "Bearer " + tok } })
+      .then(function(r) {
+        if (r.status === 401) { handleUnauth(); return Promise.reject(); }
+        return r.json();
+      })
+      .then(function(d) {
+        if (!d || !d.messages) return;
+        if (!chats[uin]) chats[uin] = { name: uin, msgs: [], unread: 0 };
+        var mapped = d.messages.map(function(m) {
+          return { dir: m.sender_uin === me.uin ? "out" : "in", text: m.content, time: (m.created_at || "").substring(11, 16) };
+        });
+        var prevIn = chats[uin].msgs.filter(function(m) { return m.dir === "in"; }).length;
+        var newIn  = mapped.filter(function(m) { return m.dir === "in"; }).length;
+        // אל תקצר את הרשימה כשהשרת עדיין לא שמר הודעה אופטימית שנשלחה
+        if (mapped.length < chats[uin].msgs.length && newIn <= prevIn) return;
+        var grew = mapped.length !== chats[uin].msgs.length;
+        chats[uin].msgs = mapped;
+        if (newIn > prevIn) {
+          if (!isActive) { chats[uin].unread = (chats[uin].unread || 0) + (newIn - prevIn); recomputeUnread(); updateBadge(); }
+          var lastMsg = mapped[mapped.length - 1];
+          notifyIncoming(chats[uin].name, lastMsg ? lastMsg.text : "");
+        }
+        if (isActive && grew) renderMsgs();
+        if (grew) renderCList();
+      }).catch(function() {});
+  }
+
   function handleUnauth() {
     if (socket) { socket.disconnect(); socket = null; }
+    stopPolling();
     localStorage.removeItem("ft_tok"); localStorage.removeItem("ft_me");
     tok = null; me = null; chats = {}; activeUin = null;
     showPage("pg-login");
@@ -761,7 +857,7 @@ document.addEventListener("DOMContentLoaded", function() {
     var pane = ge("tab-"+name); if (pane) pane.classList.add("on");
     var btn = ge("nb-"+name); if (btn) btn.classList.add("on");
     if (name === "profile") loadProfile();
-    if (name === "chat") { renderCList(); unread=0; updateBadge(); }
+    if (name === "chat") { renderCList(); }
     if (name === "search") doSearch();
   }
   window.showTabGlobal = function(n) { showTab(n); };
@@ -776,6 +872,8 @@ document.addEventListener("DOMContentLoaded", function() {
   function openChat(uin, name) {
     if (!chats[uin]) chats[uin] = { name: name, msgs: [] };
     activeUin = uin;
+    chats[uin].unread = 0; recomputeUnread(); updateBadge();
+    startPolling();
     ge("cwin-name").textContent = name;
     ge("cwin-status").textContent = "טוען...";
     ge("clist-wrap").style.display = "none";
@@ -828,10 +926,13 @@ document.addEventListener("DOMContentLoaded", function() {
       var uin = keys[i], d = chats[uin];
       var last = d.msgs.length ? sanitize(d.msgs[d.msgs.length-1].text) : "לחץ לפתיחת שיחה";
       var avHtml = d.photo ? "<img src='" + API + d.photo + "' style='width:100%;height:100%;object-fit:cover;border-radius:50%;'>" : "&#x1F495;";
+      var un = d.unread || 0;
+      var unreadHtml = un > 0 ? "<span style='background:#ef4444;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;margin-right:auto;flex-shrink:0;'>" + un + "</span>" : "";
       html += "<div class='chat-row' data-uin='" + uin + "' data-name='" + sanitize(d.name) + "'>"
             + "<div class='cav' style='" + (d.photo ? "background:none;overflow:hidden;" : "") + "'>" + avHtml + "</div>"
             + "<div style='flex:1;min-width:0;'><div class='cname'>" + sanitize(d.name) + "</div>"
-            + "<div class='cprev'>" + last + "</div></div></div>";
+            + "<div class='cprev" + (un > 0 ? "' style='color:#7c3aed;font-weight:700;" : "") + "'>" + last + "</div></div>"
+            + unreadHtml + "</div>";
     }
     el.innerHTML = html;
     el.querySelectorAll(".chat-row").forEach(function(row) {
@@ -973,6 +1074,7 @@ document.addEventListener("DOMContentLoaded", function() {
       ["גוון עור", lbl("skin_tone", u.skin_tone)],
       ["מצב משפחתי", lbl("marital_status", u.marital_status)],
       ["דת", lbl("religion", u.religion)],
+      ["זיקה לדת", lbl("religion_attitude", u.religion_attitude)],
       ["עישון", lbl("smoking", u.smoking)]
     ].filter(function(r) { return r[1]; });
 
@@ -1189,7 +1291,7 @@ document.addEventListener("DOMContentLoaded", function() {
       tok = res.d.token; me = res.d;
       localStorage.setItem("ft_tok", tok); localStorage.setItem("ft_me", JSON.stringify(me));
       showApp(); loadProfile();
-      initSocket();
+      initSocket(); startPolling(); requestNotifPermission();
     }).catch(function() { errEl.textContent = "שגיאת חיבור לשרת"; errEl.style.display = "block"; })
     .finally(function() { btn.textContent = "כניסה"; btn.disabled = false; });
   }
@@ -1214,6 +1316,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (gv("r-skin"))          body.skin_tone      = gv("r-skin");
     if (gv("r-marital"))       body.marital_status = gv("r-marital");
     if (gv("r-religion"))      body.religion       = gv("r-religion");
+    if (ge("r-religion-attitude") && gv("r-religion-attitude")) body.religion_attitude = gv("r-religion-attitude");
     if (gv("r-smoking"))       body.smoking        = gv("r-smoking");
     if (gv("r-bio").trim())    body.bio            = gv("r-bio").trim();
     var btn = ge("btn-reg"); btn.textContent = "יוצר חשבון..."; btn.disabled = true;
@@ -1341,7 +1444,7 @@ document.addEventListener("DOMContentLoaded", function() {
   ge("btn-toreg").addEventListener("click", function() { showPage("pg-reg"); });
   ge("btn-reg").addEventListener("click", doRegister);
   ge("btn-tologin").addEventListener("click", function() { showPage("pg-login"); });
-  ge("btn-toapp").addEventListener("click", function() { showApp(); loadProfile(); });
+  ge("btn-toapp").addEventListener("click", function() { showApp(); loadProfile(); initSocket(); startPolling(); requestNotifPermission(); });
   ge("btn-search").addEventListener("click", doSearch);
   ge("btn-back").addEventListener("click", function() {
     ge("cwin").classList.remove("on");
@@ -1354,6 +1457,7 @@ document.addEventListener("DOMContentLoaded", function() {
   if (ge("btn-change-pass")) ge("btn-change-pass").addEventListener("click", doChangePass);
   ge("btn-logout").addEventListener("click", function() {
     if (socket) { socket.disconnect(); socket = null; }
+    stopPolling();
     localStorage.removeItem("ft_tok"); localStorage.removeItem("ft_me");
     tok = null; me = null; chats = {}; activeUin = null;
     showPage("pg-login");
@@ -1364,7 +1468,14 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   initPhotoSlots();
-  if (tok && me) { showApp(); showTab("search"); loadProfile(); initSocket(); }
+
+  // שחרור נעילת השמע (דפדפנים דורשים אינטראקציה לפני ניגון) + הרשאת התראות
+  document.addEventListener("click", function onFirstGesture() {
+    unlockAudio();
+    document.removeEventListener("click", onFirstGesture);
+  });
+
+  if (tok && me) { showApp(); showTab("search"); loadProfile(); initSocket(); startPolling(); requestNotifPermission(); }
 })();
 </script>
 
