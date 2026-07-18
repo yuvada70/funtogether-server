@@ -3,923 +3,1335 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#7c3aed">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FunTogether">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <title>FunTogether</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>if(typeof emailjs !== "undefined") emailjs.init("pmIRWMLWBnh0tUdQc");</script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Poppins:wght@700;900&display=swap');
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Heebo',sans-serif;background:#f7f7f5;min-height:100vh;}
-.screen{display:none;min-height:100vh;}
-.screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;}
-.card{background:#fff;border-radius:22px;padding:28px 24px;box-shadow:0 2px 20px rgba(124,58,237,0.1);width:100%;max-width:420px;}
-.logo{text-align:center;margin-bottom:8px;}
-.appname{text-align:center;margin-bottom:4px;font-family:'Poppins',sans-serif;font-size:28px;font-weight:900;letter-spacing:-1px;}
-.appname .p{color:#7c3aed;}.appname .t{color:#1a1a1a;}
-.tagline{text-align:center;color:#9b8ab8;font-size:13px;margin-bottom:20px;}
-.section-title{font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin:20px 0 10px;padding-bottom:6px;border-bottom:1.5px solid #ede8f8;}
-.fg{margin-bottom:12px;}
-.fg label{display:block;font-size:12px;color:#9b8ab8;font-weight:600;margin-bottom:4px;}
-.fg input,.fg select,.fg textarea{width:100%;padding:11px 14px;border:1.5px solid #e8e3f0;border-radius:12px;font-family:inherit;font-size:13px;color:#1a1a1a;outline:none;background:#fff;}
-.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#7c3aed;}
-.row2{display:flex;gap:10px;}.row2 .fg{flex:1;}
-.row3{display:flex;gap:8px;}.row3 .fg{flex:1;}
-.btn-main{width:100%;padding:14px;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border:none;border-radius:13px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:10px;}
-.btn-main:disabled{opacity:0.6;cursor:not-allowed;}
-.btn-sec{width:100%;padding:12px;background:#fff;color:#7c3aed;border:1.5px solid #7c3aed;border-radius:13px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;}
-.err{background:#fff0f0;border:1px solid #ffc0c0;border-radius:10px;padding:10px 14px;font-size:12px;color:#cc0000;margin-top:10px;display:none;line-height:1.5;}
-.uin-box{background:linear-gradient(135deg,#f5f0ff,#ede8ff);border:1.5px solid #c4b5fd;border-radius:16px;padding:20px;text-align:center;margin:18px 0;}
-.uin-num{font-size:36px;font-weight:900;letter-spacing:6px;color:#7c3aed;font-family:'Poppins',sans-serif;}
-.opt{font-size:10px;color:#c4b5fd;font-weight:400;margin-right:4px;}
-.link-btn{background:none;border:none;color:#7c3aed;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:underline;padding:0;margin-top:10px;display:block;width:100%;text-align:center;}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(20,10,40,0.45);align-items:center;justify-content:center;padding:20px;z-index:100;}
-.modal-overlay.active{display:flex;}
-.modal-box{background:#fff;border-radius:20px;padding:24px 22px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(0,0,0,0.2);}
-.modal-title{font-size:16px;font-weight:800;color:#1a1a1a;margin-bottom:14px;text-align:center;}
-.modal-actions{display:flex;gap:8px;margin-top:12px;}
-.modal-actions .btn-main,.modal-actions .btn-sec{margin-top:0;}
-.suc{background:#eefcf0;border:1px solid #b6e8bf;border-radius:10px;padding:10px 14px;font-size:12px;color:#1e7a32;margin-top:10px;display:none;line-height:1.5;}
-.search-card{width:100%;max-width:420px;}
-.results-list{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
-.result-item{background:#faf8ff;border:1px solid #ede8f8;border-radius:14px;padding:12px 14px;text-align:right;}
-.result-item .r-name{font-weight:700;font-size:14px;color:#1a1a1a;}
-.result-item .r-meta{font-size:12px;color:#9b8ab8;margin-top:2px;}
-.result-item .r-uin{font-size:11px;color:#7c3aed;font-weight:700;margin-top:4px;}
-.empty-msg{text-align:center;color:#b0a0cc;font-size:13px;margin-top:16px;}
-.chat-list-item{display:flex;justify-content:space-between;align-items:center;background:#faf8ff;border:1px solid #ede8f8;border-radius:14px;padding:12px 14px;margin-bottom:10px;cursor:pointer;text-align:right;}
-.chat-list-item .c-name{font-weight:700;font-size:14px;color:#1a1a1a;}
-.chat-list-item .c-last{font-size:12px;color:#9b8ab8;margin-top:2px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.chat-thread{display:flex;flex-direction:column;height:60vh;overflow-y:auto;background:#faf8ff;border-radius:14px;padding:12px;margin:12px 0;gap:8px;}
-.msg-bubble{max-width:75%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;}
-.msg-mine{align-self:flex-start;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;}
-.msg-theirs{align-self:flex-end;background:#fff;border:1px solid #ede8f8;color:#1a1a1a;}
-.chat-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1.5px solid #ede8f8;}
-.chat-header-logo{font-family:'Poppins',sans-serif;font-size:15px;font-weight:900;white-space:nowrap;}.chat-header-logo .p{color:#7c3aed;}.chat-header-logo .t{color:#1a1a1a;}
-.chat-partner{font-size:14px;font-weight:700;color:#7c3aed;flex:1;text-align:right;}
-.chat-input-row{display:flex;gap:8px;align-items:flex-end;}
-.chat-input-row textarea{flex:1;padding:10px 14px;border:1.5px solid #e8e3f0;border-radius:12px;font-family:inherit;font-size:13px;color:#1a1a1a;outline:none;resize:none;min-height:48px;max-height:120px;line-height:1.5;}
-.chat-input-row textarea:focus{border-color:#7c3aed;}
-.send-msg-btn{background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border:none;border-radius:12px;padding:0 18px;font-size:13px;font-weight:700;cursor:pointer;}
-.result-actions{margin-top:8px;display:flex;}
-.msg-btn{background:none;border:1.5px solid #7c3aed;color:#7c3aed;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Poppins:wght@700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{font-family:'Heebo',sans-serif;background:#f7f5ff;color:#1a1a1a;}
+
+/* ── PAGES ── */
+.pg{display:none;height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.pg.on{display:flex;flex-direction:column;}
+.auth-pg{align-items:center;justify-content:flex-start;padding:40px 20px 30px;background:linear-gradient(160deg,#f0ebff 0%,#fff 50%);}
+
+/* ── LOGO & BRAND ── */
+.brand{text-align:center;margin-bottom:28px;}
+.brand-name{font-family:'Poppins',sans-serif;font-size:32px;font-weight:900;letter-spacing:-1px;margin-top:8px;}
+.brand-name .p{color:#7c3aed;}.brand-name .t{color:#1a1a1a;}
+.brand-tag{font-size:13px;color:#9b8ab8;margin-top:2px;}
+
+/* ── CARD ── */
+.card{background:#fff;border-radius:24px;padding:24px 22px;box-shadow:0 4px 24px rgba(124,58,237,0.1);width:100%;max-width:400px;}
+
+/* ── FORM ── */
+.flabel{font-size:12px;color:#9b8ab8;font-weight:600;margin-bottom:4px;display:block;}
+.finput{width:100%;padding:13px 15px;border:1.5px solid #ede8f8;border-radius:14px;font-family:inherit;font-size:15px;color:#1a1a1a;outline:none;background:#faf8ff;margin-bottom:14px;transition:border .2s;}
+.finput:focus{border-color:#7c3aed;background:#fff;}
+select.finput{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239b8ab8' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;background-color:#faf8ff;}
+textarea.finput{resize:none;}
+.row2{display:flex;gap:10px;}.row2>div{flex:1;}
+.row3{display:flex;gap:8px;}.row3>div{flex:1;}
+.sec{font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;padding-bottom:6px;border-bottom:1.5px solid #ede8f8;}
+
+/* ── BUTTONS ── */
+.btn{width:100%;padding:15px;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border:none;border-radius:14px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px;letter-spacing:0.3px;transition:transform .1s,opacity .2s;}
+.btn:active{transform:scale(0.98);}
+.btn:disabled{opacity:.6;}
+.btn-out{background:#fff;color:#7c3aed;border:1.5px solid #c4b5fd;}
+.btn-sm{padding:9px 16px;font-size:13px;border-radius:11px;width:auto;margin:0;}
+.link{text-align:center;font-size:13px;color:#9b8ab8;margin-top:12px;}
+.link a{color:#7c3aed;font-weight:700;text-decoration:none;}
+
+/* ── ALERTS ── */
+.err{background:#fff0f0;border:1px solid #ffc0c0;border-radius:12px;padding:10px 14px;font-size:13px;color:#cc0000;margin-top:8px;display:none;}
+.ok{background:#f0fff4;border:1px solid #b7f5c4;border-radius:12px;padding:10px 14px;font-size:13px;color:#166534;margin-top:8px;display:none;}
+
+/* ── UIN ── */
+.uin-box{background:linear-gradient(135deg,#f5f0ff,#ede8ff);border:2px solid #c4b5fd;border-radius:20px;padding:22px;text-align:center;margin:18px 0;}
+.uin-num{font-size:34px;font-weight:900;letter-spacing:6px;color:#7c3aed;font-family:'Poppins',sans-serif;}
+
+/* ── APP SHELL ── */
+.app-shell{display:none;flex-direction:column;min-height:100vh;}
+.app-shell.on{display:flex;}
+
+/* TOP BAR */
+.topbar{background:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0ecf8;flex-shrink:0;position:sticky;top:0;z-index:50;}
+.topbar-brand{display:flex;align-items:center;gap:8px;}
+.topbar-brand span{font-family:'Poppins',sans-serif;font-size:18px;font-weight:900;color:#7c3aed;}
+
+/* CONTENT AREA */
+.app-content{flex:1;overflow:auto;position:relative;padding-bottom:70px;}
+.tab-pane{display:none;min-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.tab-pane.on{display:block;}
+.tab-pane.flex-pane{display:none;flex-direction:column;min-height:calc(100vh - 120px);}
+.tab-pane.flex-pane.on{display:flex;}
+
+/* BOTTOM NAV */
+.bottom-nav{background:#fff;border-top:1px solid #f0ecf8;display:flex;position:fixed;bottom:0;left:0;right:0;z-index:999;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(124,58,237,0.08);}
+.bnav-btn{flex:1;padding:12px 4px 8px;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit;transition:transform .1s;}
+.bnav-btn:active{transform:scale(0.92);}
+.bnav-icon{font-size:22px;line-height:1;}
+.bnav-label{font-size:10px;font-weight:600;color:#bbb;}
+.bnav-btn.on .bnav-label{color:#7c3aed;}
+.bnav-badge{position:relative;}
+.badge{position:absolute;top:-4px;right:-6px;background:#ef4444;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid #fff;}
+
+
+/* ── PHOTOS ── */
+.photo-slot{width:90px;text-align:center;cursor:pointer;}
+.photo-preview{width:90px;height:90px;border-radius:16px;background:#f0ebff;border:2px dashed #c4b5fd;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;transition:border .2s;}
+.photo-preview img{width:100%;height:100%;object-fit:cover;border-radius:14px;}
+.photo-preview.has-photo{border:2px solid #7c3aed;background:#fff;}
+.photo-label{font-size:10px;color:#9b8ab8;margin-top:4px;font-weight:600;}
+.photo-slot:active .photo-preview{border-color:#7c3aed;}
+/* User card photo */
+.ucard-photo{width:100%;height:140px;border-radius:14px 14px 0 0;object-fit:cover;display:block;}
+.ucard-photo-placeholder{width:100%;height:140px;background:linear-gradient(135deg,#7c3aed,#c084fc);border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:center;font-size:40px;}
+
+/* ── SEARCH TAB ── */
+.search-content{padding:14px;}
+.filter-card{background:#fff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(124,58,237,0.07);}
+.filter-title{font-size:14px;font-weight:700;color:#7c3aed;margin-bottom:12px;}
+.users-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.ucard{background:#fff;border-radius:20px;padding:16px 12px;text-align:center;box-shadow:0 2px 12px rgba(124,58,237,0.08);cursor:pointer;transition:transform .15s,box-shadow .15s;}
+.ucard:active{transform:scale(0.97);}
+.uav{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c084fc);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 10px;}
+.uname{font-size:14px;font-weight:700;margin-bottom:4px;}
+.uinfo{font-size:11px;color:#aaa;margin-bottom:10px;line-height:1.5;}
+.utag{display:inline-block;background:#f5f0ff;color:#7c3aed;font-size:10px;padding:2px 8px;border-radius:20px;margin:2px 1px;font-weight:600;}
+.empty-state{text-align:center;padding:50px 20px;color:#ccc;}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.empty-text{font-size:14px;}
+
+/* ── CHAT TAB ── */
+.chat-list{padding:0;}
+.chat-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #faf8ff;cursor:pointer;transition:background .15s;}
+.chat-row:active{background:#faf5ff;}
+.cav{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c084fc);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.cname{font-size:14px;font-weight:700;margin-bottom:2px;}
+.cprev{font-size:12px;color:#bbb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
+.ctime{font-size:10px;color:#ccc;margin-right:auto;flex-shrink:0;}
+
+/* CHAT WINDOW */
+.chat-win{display:none;flex-direction:column;height:100%;}
+.chat-win.on{display:flex;}
+.cwin-top{background:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f5f2fc;flex-shrink:0;}
+.cwin-back{background:none;border:none;font-size:22px;cursor:pointer;color:#7c3aed;padding:0 4px;line-height:1;}
+.cwin-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c084fc);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.cwin-name{font-size:15px;font-weight:700;}
+.cwin-status{font-size:11px;color:#22c55e;font-weight:500;}
+.msgs-area{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;background:#faf8ff;-webkit-overflow-scrolling:touch;}
+.msg-in{max-width:78%;padding:10px 14px;background:#fff;border-radius:18px 18px 18px 4px;box-shadow:0 1px 4px rgba(124,58,237,0.08);align-self:flex-start;font-size:14px;line-height:1.5;word-break:break-word;}
+.msg-out{max-width:78%;padding:10px 14px;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border-radius:18px 18px 4px 18px;align-self:flex-end;font-size:14px;line-height:1.5;word-break:break-word;}
+.msg-time{font-size:9px;opacity:.4;margin-top:3px;}
+.sys-msg{text-align:center;font-size:11px;color:#c4b5fd;padding:4px 0;}
+.msg-input-bar{padding:10px 14px;border-top:1px solid #f5f2fc;display:flex;gap:8px;background:#fff;flex-shrink:0;padding-bottom:max(10px,env(safe-area-inset-bottom));}
+.msg-input{flex:1;border:1.5px solid #ede8f8;border-radius:24px;padding:10px 16px;font-size:14px;font-family:inherit;outline:none;background:#faf8ff;}
+.msg-input:focus{border-color:#7c3aed;background:#fff;}
+.send-btn{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#9333ea);border:none;color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+
+/* ── PROFILE TAB ── */
+.profile-content{padding:16px;}
+.profile-hero{text-align:center;padding:20px 0 16px;}
+.profile-av-big{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#9333ea);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:32px;}
+.profile-name{font-size:20px;font-weight:800;}
+.profile-uin{font-size:12px;color:#c4b5fd;font-family:monospace;margin-top:2px;}
+.pcard{background:#fff;border-radius:20px;padding:20px;box-shadow:0 2px 14px rgba(124,58,237,0.07);margin-bottom:12px;}
+.pcard-title{font-size:13px;font-weight:700;color:#7c3aed;margin-bottom:14px;}
+
+/* ── USER MODAL ── */
+.umodal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:flex-end;justify-content:center;}
+.umodal-overlay.on{display:flex;}
+.umodal{background:#fff;border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;animation:slideUp .25s ease;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.umodal-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;}
+.umodal-av{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c084fc);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.umodal-name{font-size:18px;font-weight:800;}
+.umodal-uin{font-size:11px;color:#c4b5fd;font-family:monospace;}
+.umodal-btn{width:100%;padding:14px;border-radius:14px;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;font-family:inherit;}
+.umodal-chat{background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;}
+.umodal-block{background:#fff5f5;color:#ef4444;border:1.5px solid #fecaca;}
+.umodal-report{background:#fff9f0;color:#f97316;border:1.5px solid #fed7aa;}
+.umodal-cancel{background:#f5f0ff;color:#7c3aed;}
+.umodal-msg{text-align:center;font-size:13px;padding:8px;border-radius:10px;margin-bottom:10px;display:none;}
+.umodal-msg.ok{background:#f0fdf4;color:#16a34a;}
+.umodal-msg.err{background:#fff5f5;color:#ef4444;}
+
+/* ── USER MODAL PROFILE ── */
+.umodal{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:480px;animation:slideUp .25s ease;max-height:90vh;overflow-y:auto;}
+.umodal-photos{display:flex;gap:4px;border-radius:24px 24px 0 0;overflow:hidden;height:200px;}
+.umodal-photos .ph{flex:1;background:linear-gradient(135deg,#7c3aed,#c084fc);display:flex;align-items:center;justify-content:center;font-size:48px;overflow:hidden;}
+.umodal-photos .ph img{width:100%;height:100%;object-fit:cover;}
+.umodal-body{padding:16px 16px 24px;}
+.umodal-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.umodal-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c084fc);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.umodal-name{font-size:18px;font-weight:800;}
+.umodal-subname{font-size:11px;color:#c4b5fd;}
+.umodal-details{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.umodal-detail{background:#f5f0ff;border-radius:12px;padding:10px 12px;}
+.umodal-detail-label{font-size:10px;color:#9b8ab8;font-weight:600;margin-bottom:2px;}
+.umodal-detail-value{font-size:13px;font-weight:700;color:#3b1fa8;}
+.umodal-bio{background:#faf8ff;border-radius:12px;padding:12px;font-size:13px;color:#555;line-height:1.6;margin-bottom:14px;border:1px solid #ede8f8;}
+.umodal-bio-label{font-size:10px;color:#9b8ab8;font-weight:600;margin-bottom:4px;}
+.umodal-actions{display:flex;gap:8px;margin-bottom:10px;}
+.umodal-block{flex:1;padding:10px;border-radius:12px;border:1.5px solid #fecaca;background:#fff5f5;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.umodal-report{flex:1;padding:10px;border-radius:12px;border:1.5px solid #fed7aa;background:#fff9f0;color:#f97316;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
 </style>
+<script>
+// Unregister old service workers
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for (var reg of registrations) { reg.unregister(); }
+  });
+}
+</script>
 </head>
 <body>
 
-<!-- כניסה -->
-<div class="screen active" id="sc-login">
-  <div class="logo"><img src="data:image/png;base64,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" style="width:80px;height:72px;object-fit:contain;"></div>
-  <div class="appname"><span class="p">Fun</span><span class="t">Together</span></div>
-  <div class="tagline">מצאו את ה-Together שלכם ✨</div>
-  <div class="card">
-    <div class="fg"><label>אימייל</label><input type="email" id="l-email" placeholder="your@email.com"/></div>
-    <div class="fg"><label>סיסמה</label><input type="password" id="l-pass" placeholder="••••••••"/></div>
-    <div class="err" id="l-err"></div>
-    <button class="btn-main" id="btn-login">כניסה</button>
-    <button class="btn-sec" id="btn-to-reg">הרשמה — משתמש חדש</button>
-    <button class="link-btn" id="btn-open-forgot">שכחתי סיסמה</button>
-  </div>
-</div>
-
-<!-- מודל שכחתי סיסמה -->
-<div class="modal-overlay" id="modal-forgot">
-  <div class="modal-box">
-    <div id="fp-step1">
-      <div class="modal-title">שכחתי סיסמה</div>
-      <div style="font-size:12.5px;color:#9b8ab8;margin-bottom:12px;line-height:1.6;">הזן/י את כתובת המייל שאיתה נרשמת. אם הכתובת קיימת במערכת, נשלח אליה קוד אימות בן 6 ספרות.</div>
-      <div class="fg"><label>אימייל</label><input type="email" id="fp-email" placeholder="your@email.com"/></div>
-      <div class="err" id="fp-err1"></div>
-      <div class="suc" id="fp-suc1"></div>
-      <div class="modal-actions">
-        <button class="btn-main" id="btn-fp-send">שלח קוד</button>
-        <button class="btn-sec" id="btn-fp-close1">סגור</button>
-      </div>
+<!-- ① LOGIN -->
+<div class="pg on" id="pg-login">
+  <div class="auth-pg">
+    <div class="brand">
+      <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAClALgDASIAAhEBAxEB/8QAHQABAAICAwEBAAAAAAAAAAAAAAcIAQYDBQkEAv/EAD8QAAECBQIDBgIHBQgDAAAAAAECAwAEBQYRByESMUEIE1FhcYEiQhQVMlJikaEjJHKCwRYlM2NzkqKxQ5Pw/8QAGgEBAAIDAQAAAAAAAAAAAAAAAAMEAQIFBv/EACsRAAICAgEDBAAFBQAAAAAAAAABAgMEETESEyEFIkFRBiMyYZEUQnHB0f/aAAwDAQACEQMRAD8AuXCEIAQhCAEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBCEMwAhDIzDMADHV3PXqTbVFmaxWpxqUkpdBU44s49h4k9ANzHZkxS/tJ3rUNQ9UZayKAVTEjIzqZJpts5ExNFXCtR8knKc9MKMbwg5snx6e7PXx8lpNM9QLb1Bo6qlQJlRLauF6WeAS8yenEnJ58weUbbFEmf7S6E6uMd+jjLaELdQ0SG5yVUSDjxIIVjPJSYvDRKlJ1ikSlUp7yX5WbZS8y4k7KQoZB/IwnHT8EuXiqnUovcXwfZCGYxkRoUzMIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBGOkZhiAKm9p2v3npxqkzWLeuCelJSsS4dSwV8bPeN4Sv4FZA2KD7x3ek/aclZ6aZpV+yjUgtfwoqcvnuSf8AMQd0eoJHpG19sW1G69pUusNt5nKE99LQoDJ7o/C6n0wQrHigeEV40k06lNSLPrUnSnW5a6qW4HpcOLIammFp2QrnwkLCviA+YA5jowVdlO5LjwXYKudfuReOcnm10F+oSLyHkGWU60tCuIKHCSCCOcU07FkjLz+ra5uaPePSsg680VbnvFFKSr1wpW/mYnzsu2retp2HOUa9UJbAmiZGWLwd7popHEnI2wVZIHTMV0lBP6Fa9fEhTklLzBTjq7IunYjxUE/8kecV4LXVFG+NHanCPJMHbdp8qu1qFVOFInGZtbTasblCk5I9MpB9o3jssTLszohRC8Se7LzSCfupdWAPYbe0V+7RuoCdSLzptEtUrnqfK4bluBJ/eZlwgEjyAwkHzUeUWLRZtbt/QU2da0yhutM0sssv8XBl9W61A9CSVYPTMRSTSSZNdHoxa65+G2dJq3rzbtnOu0qkNfXdaRlKmm18LLB/zF77/hAJ9IhCiagag6lajUihzVemJaWnJtIXLyP7BKWx8ShkfF9lJ5mOB/SedsrTqq3Xf4SzPEmXpsgl8LK3l7JccUk9CSrhB6ZPhG4djC1UTVdql3zLWRJNiTlSR868FxQ9AEjP4jEbRfrrxcfGnZBba8b/AH/YtM2ngQlAycDG8fuEIHmhCEIAQhCAEIQgBCEIAQhCAEIRgwBmEYBhAHy1iRl6nS5qnTSAtiZZU04k9UqGDFHdGaorSrtCv0+uPiVk2n3aZOOLPClKDu24fw7IPoqL1mK9676CVi/NRm7kodUp1OYflENTvfpWpRcQSApKUjBykgHJH2RFnHsitxlwyeicVuMuGbRcnaJ0zpLS/o1Tfq7qc4bkmCrJ/iVgfrFbdX9TKjq7cVPk6faol1MKKZVpkF+adCsD4iABjyGw8Yme2+yvbkvwOV+v1GoKBypEuEspPlnc/qImSyrGtKzZYs25Q5OQKgAt1KMuuY+8s5Ur3MOqqv8AR5ZYrupofVBbZWq17epWhlFZvq+WTN3NNBSaRSUHAaONyteCOLffnwjlkxJdn9pOyKsykVpidoUxj4kup71v2Wkb+4ES7X6JSK/TV02t0yUqMm59pmYaC0n2PXziILm7NVk1Fxb1HmqhR1qzhDbnetj0C8kDyzETkpcm8Lse/ff3v7Iz7WmoNKupVHpNu1Bufp7DRnHnWTlJcJKUp9QASR5jxiwOg9rrtLS2j0yYQETi2fpE1/qL+Ij2yB7RD9G7M9Up14Uuber0jUKPLzbb0w2tpTbqkIPFw9QckAHlsTFm0gBIEaM3zr6lTCml7S8sz1hDaMRg5RmEIQAhCEAIQhACEIQAhCMGAM5iH9WdfbSsmZepcnxVystHhXKyywENK8HHMEA+QyR4R0Hau1cftOSTZ9uzIarc6z3kw+ndUqwcjI8FqwcHoAT4RVjTmyK/qBcP1Pb8v3r+eOYmHSe7YB+dxW5338STF7HxVKPcs4LNNKa6pcEmXB2l9TKk6v6s+p6K0RslqWLy0/zrOD/tjr6X2h9WpN0LercjUBn7E1IN4P8A6+AxNFrdlm0ZOVaNwVap1SaG6y053DWfAJGTj1MdpVOzLpvMtESv1tJOY2U3NlQHsoHMbu7GXhRJ1bjrxo17TztQU6efTKXrSRSlHAE7KrLjPqpJHEn2zFhqfOyk/IszslMNTEs+gLadbUFJWk8iCIpRqN2fLutyuSMlSVmtSFRmEsMzaGyFMKJ275I5DrxDbY8ts71rDdTOj+n9N0psqaUipfRuOemUqPG0lZJUoH5VrUVEeA5dIhsqhNrt/JiyiuxpVfJI+qmvlpWZNv0qSCq3V2shcvLr4W2leC3NwD5AEiIMrvaT1JqD2aamj0lk8kIly8sfzLOD/tiONN7Gr1+14Uy35YLWPimJl0kNMJPzLVvufDmT+cWatnsvWlKSyDXavValMfP3Swy3nyABOPeMyhXV4fllpQxcbxPyyIqb2h9VJR0LfqNLnkZ3S/IgewKCmJZ087S1GqbyJS8KcKK6ohImWVl1jfxyOJP6jzjtKt2ZtP5lhQkn6vIukYStMzxgH0UDFf8AV7SO4NPJhL0wr6yo7hw1PNoICT91wckq8N8H9Ii9kuCaCwsp9CWn/BemUmGJqWbmZZ5DzDqQttxCgUqSeRBHOIb1N7QdtWzNTFLoTBrtTYUUOBtzgYbUOYUvBzj8IMRB2a9THKJVUWTXX1O27UiWGu9UeGWcXsEg9EKJxjkCcx8de0HuNrVSYte35c/VbgEwxOu57phgnAC1dVAggAbnbzIjcdPyRU4FNVzjkPwvK/c5ax2idS558qk36VTGSchDMp3ih5FSyc/kI4qZ2g9UZR5Kn6hTJ9vO6H5IJyPVBTj9YmC3ezLZ0pLo+ualVKnMfOUu90gnySBn9Y+mr9myxJppX0CZq0g7jZSZjjSPUKG8astLM9MT6ejx/g+HTvtHUWqvok7tkRRH1kJTMNuFyXJO25IBR75HnE6y77Mwyl5h1LrawFJUk5BB5EGKNas6VV7T2bS7OlNQpLquFidbQQkfhWPlV74PTwjdOzBqjM0Sry9nVmYUukzjndyS3FZ+jOnkgH7ijsB0J84139muX6VVZT38V7X0W2hAbiEZPOiEIQAhCEAI4pp1DDC3nDhDaSpR8ABkxyxruprjjWnlwuskhxFNmCnHj3ZjKW2kZS29Hnnf1xTd235WbknFqW7PTC1NJPyNA4bQPRASPXJ6xens+2LLWLpxIyRl201KbQJmoOAbrdUBsT4JGAPSKD2s2hy6qE24BwLqUslf8JeQD+keniQAkADaOlny6VGC4LWS9JRM4EMQhHMKh88++1KSj026QEMoLijnkAMx5vXTWpy5ryrFdm1uOzE/OKd8SEk4QgeQSEpHoI9A9U1rb03uNbZIWKa/jH8Bjz5sNpt69rfZdP7N2qyaF/wl9AP6GLuItKUjp+nxSUpF7tB7Hl7F07kKb3LaZ99ImJ5xKcFbqhkgnrgYA9I37EYSNhGYpyfU9s505OUm2MR11xUiQrtEm6RU2ETEpNtKadbUMggiOxjBjHBhNp7R5zXlQn7auir2/MEh2nzK2sg7lP2kK90lJ94vJohcTt06XUOsTR4ptcuGphX3nEEpJ98Z94q32s2m2tZ6j3eAHJGXWrH3uFQ/6Aidex+44vSRIXnCJ54I9MiJJvZ6H1L83DhY+SZYYgIRGedOsuei0+4KFOUapy6JiUm2lNuIUM7Hr6jnHn7eFGmrbuSo0KYWtuYkJktBaT8WxyhQPjgpMeihik/araba1pqHdJADkvLuLx1WUEH9AmMS4PQ/h6196VXw0Wr0euRy7NOKNW38fSHpfgmP9VBKVH0JBPvG3dYiHsmLWrSZlK/spm3gn0zn/uJd6wXBx8yCrvnFcJszCEIyVhCEIAR8lXk0VCmTUi4AUTDK2lZ5YUCP6x9cYMF4B5gzrMzRriflVgom6bNrbWPuutOEH8lJj0lseuS1y2fSq9KrC2p2VQ6MHkSNx7HIinvbBsx2g6pLuKXl+Gn1xpLnGnkJhI4Vg+oCVe5jfOxXqClcrNafVR5KXGVl+lqUftoO7jXqk/EPJR8I6mSu9SrF8Fu38yCkWghDMI5ZUOvuSQTVaBUKarlNSzjJ/mSR/WPNhov0qtLIQUzMhNAhJ+Vba84/NMemxikHarshdranTNWlGOCm10fSkKHJL/J1PucL/mMW8SaTcX8nQwJrqcH8ly7RrMrcVsU2uSSwtidlkPII6ZGSPUHIjtIrZ2L79bmKTMWHUXgmYlSX6cSf8Ro7rQPNJ39FeRiyeRFeyDjLRUvrdc3FmY/KzgZPLEfrMRh2j7/Zsiwn0S74FYqaVS8igcwSPicPkkHPqQOsapbZiqt2zUI8sqfrXX03NqfcFVbVxsGYMux/A2AgexIUfeLZdmOluUzRmiF1socm0KmSCN8LUSk+4wYp1pnaszed4U+3GC5wTT37y71QznLivXGceZEehchKsyUkxJyzYbYYbS22gckpAwB+UbzO56vYoVQoic4hDrAnERnnz8uKCUlSiAAMkmKBayV9Nyak1uroVxMLmi2yc5HdoAQPY8JPvFqe0xfyLPsN6Rk3uGsVZCpeVxzbTyW57A7eZEVQ0wtV69Lwpdvo4lMvOJXNKxullJBWfcbepjWX0en9CpVMJ5M+C4PZzpLlJ0eoTbySlyZZM0oHnhxRUn/iREh8o45ZluXl22GUBDbaQlCRyAGwEcsbHnLrO7ZKb+WIQhAjEIQgBCEIA0vWexJLUKxZygzBS3M476SfI3ZfSDwn0PIjqCYoChdes25x3Zcp1apUyRtuW3Un9R/2DHpliIC7UejZu2WF2Wyxw16VQRMsIA/fmhy/nTjY9QSD0xdxL1D2S4ZYosS9r4JA0T1Hpuo9pNVFkpYqTADc/KcWS054jxSeYP8AUGN9jzd01ver2LdUvcFEePEkhMwwThEy3ndtf64PMGL86ZX1RL+tlqt0V8EbImGFH9pLuYyUKHjvkHqNxGmTj9p7XBi6noe1wbSecaNrdYUtqFYs1RlKS1PNgvSD6uTbwB4c4+U5wfIxvMCIrRk09oijJxakjzbkpmuWbdrbjIXT6zSpndKuaFp2IPiDy8wYvfpBqBTNQ7TZq0nhmbb/AGc7KqUCplwc/VJ5g9QehyIjjtO6Pm5mVXfbbH99SzREzLNpH742ORH40748QceEVo0vvmsWDcjNco7oWnZMzLKP7OZa6pV4HqFdD4jINySV0drk68oRzKuqP6kX9uy4KXbFvzdcrMymWk5VsrWs8z4JSOpPIDrFDdWL6qF+3a9XJ0KZlgO7k5YnPcN52G2xJ5kjrE8azys5rbptT7isaouzDciVGbo2QFFwgHcffSOQOxCsiNW7MOkD1bn2buuiUcbpsm5mUlXkFJmHUnHEsH5UkcupHlvBFKC2zfB7WLW7Zv3fRJXZV00ctW3l3LWGQir1VAKGyneXl9ilJ/Eo7n2HSJvEflAwMAYA5R+oib2zkX3Susc5fIMdRdtwUu16BNVusTCWJSWRxKJ5qPRIHUk7AR9NbqshRaTM1WqTTcrJyzZcddcOAlIH/wBtFJtddUZ3UWthqXLktQpRR+iy+cFxWf8AFWOqvAdB5kxgtYGDLLs1/auWdBqZeVTvm75muz4KEOfs5WXByGGgfhSPPqT1MWe7LenKrUtldfq0vwViqpBCFD4pdjmlHqT8R9h0iMezFpUbgqEteldYJpEqvjkmVjaacB2WfFCTy8SPARbVIAGAMQ0dL1bNjGCxaeFz/wAMjlCAhA88IQhACEIQAhCEAIxtGYQBWvtNaGKqxnL1syWBqO7s/IJGPpIxutsD/wAniPm9edd9PbzuHT65E1WjPlp1J7uZlnQeB5AO6Fjy335iPRw8ogTtBaDS12rduS022JOu8JMwxslqc8z0SvpxdevQxeoyfHRZwXKL1ronwSFpHqZb+o1FE3THPo880B9LkHFDvGVf1Seih+h2jeMx5r06euCzLmL8mubo9akHeBaTlC21A7pUOo8QdiIs3bHafpKrRdduClPor7KMIYlgS1MnGygo/YHiDy6ZjS3FcXuHlGbMOW9w8onW7bkotrUZ6r12fakpRobrWd1HokDmSfARWTU+xaDqZQnNSdLgHX1ZXU6Zw8LvFjJIQM4c8R83MEnnD2pN/XDfldNVuCZAaRkMSraj3MsnwSPHxVzP5RYDsoaX3RQ6j/bGsTU1SpaYZKG6ZyMwkjZbqTyxzA2V6cjjo7S6m/JZVP8ASQ7jl7vr/RAund5V+wrmFVpDvduAhualnMht9IP2FjxG+DzEXa0o1Ht7UOiCepLnczbYAmpJ1Q71hXnjmk9COf6RHWvuhUtcynrjtJpqVrRBVMSw+Bqb8/BLnn16+MVdpNQuCzrmD8iubpFYkXeFxKgULQRzQtPzJPUHYiMS6bVtcll1VeoQ6oeJHo2DtHT3fctGtSiv1muzrcpKMjdSuaj0SkdSfARCVvdpekKtBx+t0t9FeZSAmWYBLUwcfaC/lHiDv4Zivmot93BfVbXU6/Mjuk7S8shR7mXT4JHj4qO5/IRB0tclfG9Itsnqzwkd9rNqpWNRaolIK5KiML4paR4s8R6LcI5q8uQ/WNl7P2jc3d84iv3Ewpi3m1ZbbVlK5w+XggdT15DxjutCdBXaqJe472l3WJIKDktTVfCp4cwXRzCT93meu20WnlmGpZlDDDSGmkJCUIQMBIHQDpBlrM9Qrx4djG/kxJyzEpLNysqy2yw0gIbbbHClKQMAADkI5YzCNTz3IEIQgBCEIAQhCAEIQgBCEIAGMEbRmEARvrLpHb+osgXXk/Qa00giWn205UPBKx86fLp0intc0uv2jXKaA/b07MTSl8LC5ZoraeGdlJXyx64x1j0JUMxjhSSD1ievIlBaLVGXOnxyQRoVoFI2umXr12hqo1wHjaY5syh6Y++r8R5dB1id8Y5R+hyhEUpuT2yG22VsuqTMY2iN9ZNJKFqFJF9WJCtNIIl55Cc+iXE7cSf1HQxJMYPKMJ6MV2yql1RemUArOmV9Um4TQHrfnH5xS+BlbDRW08M7KSrlj1xjrFkNEdCZC10y9bunuajWx8aGkjLEqfLP2lfiPsIm7hGQcbiP0OUZcmzoZHqt10Ojj70YAwMYjPtCEanMEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBiEIQAhCEAIQhACEIQAhCEAf/2Q==" style="width:72px;height:65px;object-fit:contain;">
+      <div class="brand-name"><span class="p">Fun</span><span class="t">Together</span></div>
+      <div class="brand-tag">מצאו את ה-Together שלכם ✨</div>
     </div>
-    <div id="fp-step2" style="display:none;">
-      <div class="modal-title">איפוס סיסמה</div>
-      <div style="font-size:12.5px;color:#9b8ab8;margin-bottom:12px;line-height:1.6;" id="fp-step2-hint">בדוק/י את תיבת המייל שלך והזן/י כאן את הקוד שקיבלת, ביחד עם הסיסמה החדשה.</div>
-      <div class="fg"><label>קוד אימות (התקבל במייל)</label><input type="text" id="fp-code" placeholder="123456" inputmode="numeric"/></div>
-      <div class="fg"><label>סיסמה חדשה (לפחות 6 תווים)</label><input type="password" id="fp-newpass" placeholder="••••••••"/></div>
-      <div class="err" id="fp-err2"></div>
-      <div class="suc" id="fp-suc2"></div>
-      <div class="modal-actions">
-        <button class="btn-main" id="btn-fp-reset">אפס סיסמה</button>
-        <button class="btn-sec" id="btn-fp-close2">סגור</button>
-      </div>
+    <div class="card">
+      <span class="flabel">אימייל</span>
+      <input type="email" id="l-email" class="finput" placeholder="your@email.com">
+      <span class="flabel">סיסמה</span>
+      <input type="password" id="l-pass" class="finput" placeholder="••••••••">
+      <div class="err" id="l-err"></div>
+      <button class="btn" id="btn-login">כניסה</button>
+      <button class="btn btn-out" id="btn-toreg" style="margin-top:10px;">הרשמה — משתמש חדש</button>
+      <div class="link"><a id="lnk-forgot" style="cursor:pointer;">שכחתי סיסמה</a> &nbsp;|&nbsp; <a href="terms.html" target="_blank" style="color:#9b8ab8;">תנאי שימוש</a></div>
     </div>
   </div>
 </div>
 
-<!-- הרשמה -->
-<div class="screen" id="sc-register">
-  <div class="logo"><img src="data:image/png;base64,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" style="width:80px;height:72px;object-fit:contain;"></div>
-  <div class="appname"><span class="p">Fun</span><span class="t">Together</span></div>
-  <div class="tagline">כמה פרטים ומתחילים</div>
-  <div class="card">
-  <form id="reg-form" onsubmit="return false;">
-    <div class="section-title">פרטים בסיסיים</div>
-    <div class="fg"><label>שם / כינוי *</label><input type="text" id="r-name" placeholder="StarSeeker_77"/></div>
-    <div class="fg"><label>אימייל *</label><input type="email" id="r-email" placeholder="your@email.com"/></div>
-    <div class="fg"><label>סיסמה * (לפחות 6 תווים)</label><input type="password" id="r-pass" placeholder="••••••••"/></div>
-    <div class="row2">
-      <div class="fg"><label>גיל *</label><input type="number" id="r-age" placeholder="25" min="18" max="120"/></div>
-      <div class="fg"><label>מגדר *</label>
-        <select id="r-gender">
-          <option value="male">זכר</option>
-          <option value="female">נקבה</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
+<!-- ② REGISTER -->
+<div class="pg" id="pg-reg">
+  <div class="auth-pg" style="padding-top:24px;">
+    <div class="brand" style="margin-bottom:18px;">
+      <img src="data:image/png;base64,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" style="width:72px;height:65px;object-fit:contain;">
+      <div class="brand-name"><span class="p">Fun</span><span class="t">Together</span></div>
     </div>
-    <div class="fg"><label>עיר מגורים</label><input type="text" id="r-location" placeholder="תל אביב, חיפה..."/></div>
-    <div class="fg"><label>אזור מגורים</label>
-      <select id="r-region">
-        <option value="">-- בחר --</option>
-        <option value="north">צפון</option>
-        <option value="haifa">חיפה והקריות</option>
-        <option value="center">מרכז</option>
-        <option value="tel_aviv">תל אביב</option>
-        <option value="jerusalem">ירושלים</option>
-        <option value="shfela">שפלה</option>
-        <option value="south">דרום</option>
-        <option value="other">אחר</option>
+    <div class="card">
+      <div class="sec">פרטים בסיסיים</div>
+      <span class="flabel">שם / כינוי *</span>
+      <input type="text" id="r-name" class="finput" placeholder="StarSeeker_77">
+      <span class="flabel">אימייל *</span>
+      <input type="email" id="r-email" class="finput" placeholder="your@email.com">
+      <span class="flabel">סיסמה * (לפחות 6 תווים)</span>
+      <input type="password" id="r-pass" class="finput" placeholder="••••••••">
+      <div class="row2">
+        <div><span class="flabel">גיל *</span><input type="number" id="r-age" class="finput" placeholder="25" min="18" max="120"></div>
+        <div><span class="flabel">מגדר *</span>
+          <select id="r-gender" class="finput"><option value="male">זכר</option><option value="female">נקבה</option><option value="other">אחר</option></select>
+        </div>
+      </div>
+      <span class="flabel">אזור מגורים</span>
+      <select id="r-loc" class="finput">
+        <option value="">-- בחר אזור --</option>
+        <option value="מרכז (גוש דן)">מרכז (גוש דן)</option>
+<option value="ירושלים">ירושלים</option>
+<option value="מודיעין והסביבה">מודיעין והסביבה</option>
+<option value="שפלה">שפלה</option>
+<option value="חיפה והקריות">חיפה והקריות</option>
+<option value="צפון">צפון</option>
+<option value="גליל">גליל</option>
+<option value="דרום">דרום</option>
+<option value="שומרון ויהודה">שומרון ויהודה</option>
       </select>
-    </div>
 
-    <div class="section-title">מראה חיצוני <span class="opt">(אופציונלי)</span></div>
-    <div class="row2">
-      <div class="fg"><label>גובה (ס"מ)</label><input type="number" id="r-height" placeholder="170" min="100" max="250"/></div>
-      <div class="fg"><label>מסגרת גוף</label>
-        <select id="r-body">
-          <option value="">-- בחר --</option>
-          <option value="slim">רזה</option>
-          <option value="average">בינוני</option>
-          <option value="athletic">ספורטיבי</option>
-          <option value="heavy">שמן</option>
-          <option value="other">אחר</option>
-        </select>
+      <div class="sec">מראה חיצוני (אופציונלי)</div>
+      <div class="row2">
+        <div><span class="flabel">גובה (ס"מ)</span><input type="number" id="r-height" class="finput" placeholder="170"></div>
+        <div><span class="flabel">מסגרת גוף</span>
+          <select id="r-body" class="finput"><option value="">--</option><option value="slim">רזה</option><option value="average">בינוני</option><option value="athletic">ספורטיבי</option><option value="heavy">שמן</option></select>
+        </div>
       </div>
-    </div>
-    <div class="row3">
-      <div class="fg"><label>צבע עיניים</label>
-        <select id="r-eyes">
-          <option value="">--</option>
-          <option value="brown">חום</option>
-          <option value="blue">כחול</option>
-          <option value="green">ירוק</option>
-          <option value="black">שחור</option>
-          <option value="honey">דבש</option>
-          <option value="gray">אפור</option>
-          <option value="other">אחר</option>
-        </select>
+      <div class="row3">
+        <div><span class="flabel">עיניים</span>
+          <select id="r-eyes" class="finput"><option value="">--</option><option value="brown">חום</option><option value="blue">כחול</option><option value="green">ירוק</option><option value="hazel">אגוז</option><option value="honey">דבש</option><option value="gray">אפור</option><option value="other">אחר</option></select>
+        </div>
+        <div><span class="flabel">שיער</span>
+          <select id="r-hair" class="finput"><option value="">--</option><option value="black">שחור</option><option value="brown">חום</option><option value="blonde">בלונד</option><option value="red">אדום</option><option value="gray">אפור</option><option value="satani">שטני</option><option value="other">אחר</option></select>
+        </div>
+        <div><span class="flabel">עור</span>
+          <select id="r-skin" class="finput"><option value="">--</option><option value="fair">בהיר</option><option value="medium">בינוני</option><option value="olive">זית</option><option value="brown">חום</option><option value="dark_brown">שחום</option><option value="dark">כהה</option></select>
+        </div>
       </div>
-      <div class="fg"><label>צבע שיער</label>
-        <select id="r-hair">
-          <option value="">--</option>
-          <option value="black">שחור</option>
-          <option value="brown">חום</option>
-          <option value="blonde">בלונד</option>
-          <option value="chestnut">שטני</option>
-          <option value="ginger">ג'ינג'י</option>
-          <option value="red">אדום</option>
-          <option value="gray">אפור</option>
-          <option value="white">לבן</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-      <div class="fg"><label>צבע עור</label>
-        <select id="r-skin">
-          <option value="">--</option>
-          <option value="black">שחור</option>
-          <option value="dark">כהה</option>
-          <option value="tan">שזוף</option>
-          <option value="light">בהיר</option>
-          <option value="pale">לבנבן</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-    </div>
-    <div class="row2">
-      <div class="fg"><label>סגנון שיער</label>
-        <select id="r-hair-style">
-          <option value="">--</option>
-          <option value="short">קצר</option>
-          <option value="long">ארוך</option>
-          <option value="bald">קירח</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-    </div>
 
-    <div class="section-title">רקע אישי <span class="opt">(אופציונלי)</span></div>
-    <div class="row2">
-      <div class="fg"><label>מצב משפחתי</label>
-        <select id="r-marital">
-          <option value="">-- בחר --</option>
-          <option value="single">רווק/ה</option>
-          <option value="divorced">גרוש/ה</option>
-          <option value="widowed">אלמן/ה</option>
-          <option value="separated">פרוד/ה</option>
-          <option value="married">נשוי/אה</option>
-          <option value="other">אחר</option>
-        </select>
+      <div class="sec">רקע אישי (אופציונלי)</div>
+      <div class="row2">
+        <div><span class="flabel">מצב משפחתי</span>
+          <select id="r-marital" class="finput"><option value="">--</option><option value="single">רווק/ה</option><option value="married">נשוי/ה</option><option value="divorced">גרוש/ה</option><option value="widowed">אלמן/ה</option><option value="separated">פרוד/ה</option></select>
+        </div>
+        <div><span class="flabel">דת</span>
+          <select id="r-religion" class="finput"><option value="">--</option><option value="secular">חילוני</option><option value="jewish">יהודי</option><option value="muslim">מוסלמי</option><option value="christian">נוצרי</option><option value="druze">דרוזי</option><option value="other">אחר</option></select>
+        </div>
       </div>
-      <div class="fg"><label>דת</label>
-        <select id="r-religion">
-          <option value="">-- בחר --</option>
-          <option value="secular">חילוני</option>
-          <option value="jewish">יהודי</option>
-          <option value="muslim">מוסלמי</option>
-          <option value="christian">נוצרי</option>
-          <option value="other">אחר</option>
-          <option value="prefer_not_to_say">מעדיפ/ה לא לציין</option>
-        </select>
-      </div>
+      <span class="flabel">עישון</span>
+      <select id="r-smoking" class="finput"><option value="">--</option><option value="no">לא מעשן/ת</option><option value="occasionally">לפעמים</option><option value="yes">מעשן/ת</option></select>
+      <span class="flabel">קצת עליי</span>
+      <textarea id="r-bio" class="finput" rows="3" placeholder="ספר/י קצת על עצמך..."></textarea>
+      <div class="err" id="r-err"></div>
+      <button class="btn" id="btn-reg">יצירת חשבון ✨</button>
+      <button class="btn btn-out" id="btn-tologin" style="margin-top:10px;">כבר יש לי חשבון</button>
     </div>
-    <div class="fg"><label>עישון</label>
-      <select id="r-smoking">
-        <option value="">-- בחר --</option>
-        <option value="no">לא מעשן/ת</option>
-        <option value="occasionally">לפעמים</option>
-        <option value="yes">מעשן/ת</option>
-      </select>
-    </div>
-    <div class="fg"><label>קצת עליי</label><textarea id="r-bio" rows="2" placeholder="ספר/י קצת על עצמך..."></textarea></div>
-    <div class="err" id="r-err"></div>
-    <button class="btn-main" id="btn-register">יצירת חשבון ✨</button>
-    <button class="btn-sec" id="btn-to-login">כבר יש לי חשבון</button>
-  </form>
   </div>
 </div>
 
-<!-- UIN -->
-<div class="screen" id="sc-uin">
-  <div class="logo"><img src="data:image/png;base64,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" style="width:80px;height:72px;object-fit:contain;"></div>
-  <div class="appname"><span class="p">Fun</span><span class="t">Together</span></div>
-  <div class="card" style="text-align:center;margin-top:16px;">
-    <div style="font-size:44px;margin-bottom:12px;">🎉</div>
-    <div style="font-size:16px;font-weight:700;margin-bottom:4px;" id="uin-name">ברוכ/ה הבא/ה!</div>
-    <p style="font-size:13px;color:#b0a0cc;margin-bottom:4px;">מספר ה-UIN הייחודי שלך:</p>
-    <div class="uin-box">
-      <div class="uin-num" id="uin-val">--------</div>
-      <p style="font-size:12px;color:#9333ea;margin-top:8px;font-weight:500;">שמור/י את המספר — זו הזהות שלך 💜</p>
+<!-- ③ UIN -->
+<div class="pg" id="pg-uin">
+  <div class="auth-pg">
+    <div class="brand"><img src="data:image/png;base64,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" style="width:72px;height:65px;object-fit:contain;">
+      <div class="brand-name"><span class="p">Fun</span><span class="t">Together</span></div>
     </div>
-    <p style="font-size:13px;color:#b0a0cc;line-height:1.7;">חברים מוצאים אותך לפי המספר הזה</p>
-    <button class="btn-main" id="btn-to-main" style="margin-top:20px;">אל FunTogether ←</button>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:52px;margin-bottom:12px;">&#127881;</div>
+      <div style="font-size:17px;font-weight:800;margin-bottom:6px;" id="uin-welcome">ברוכ/ה הבא/ה!</div>
+      <p style="font-size:13px;color:#9b8ab8;margin-bottom:4px;">מספר ה-UIN הייחודי שלך:</p>
+      <div class="uin-box">
+        <div class="uin-num" id="uin-val">--------</div>
+        <p style="font-size:12px;color:#9333ea;margin-top:8px;font-weight:600;">שמור/י — זו הזהות שלך &#128156;</p>
+      </div>
+      <p style="font-size:13px;color:#9b8ab8;line-height:1.7;">חברים מוצאים אותך לפי המספר הזה</p>
+      <button class="btn" id="btn-toapp" style="margin-top:20px;">אל FunTogether &#8594;</button>
+    </div>
   </div>
 </div>
 
-<!-- ראשי -->
-<div class="screen" id="sc-main">
-  <div class="logo"><img src="data:image/png;base64,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" style="width:80px;height:72px;object-fit:contain;"></div>
-  <div class="appname"><span class="p">Fun</span><span class="t">Together</span></div>
-  <div class="card" style="text-align:center;margin-top:16px;">
-    <div style="font-size:40px;margin:8px 0;">💜</div>
-    <div style="font-size:17px;font-weight:700;" id="main-hi">שלום!</div>
-    <div style="font-size:13px;color:#b0a0cc;margin:8px 0 20px;">נרשמת בהצלחה ל-FunTogether 🎉</div>
-    <button class="btn-main" id="btn-to-chats" style="margin-top:16px;">הצ'אטים שלי 💬</button>
-    <button class="btn-main" id="btn-to-search">חיפוש משתמשים 🔍</button>
-    <button class="btn-sec" id="btn-to-settings">הגדרות ⚙️</button>
-    <button class="btn-sec" id="btn-logout">התנתק</button>
+<!-- ④ APP -->
+<div class="app-shell" id="app-shell">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img src="data:image/png;base64,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" style="width:28px;height:25px;object-fit:contain;">
+      <span>FunTogether</span>
+    </div>
+    <div style="font-size:12px;color:#9b8ab8;" id="topbar-user"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="app-content">
+
+    <!-- SEARCH -->
+    <div class="tab-pane on" id="tab-search">
+      <div class="search-content">
+        <div class="filter-card">
+          <div class="filter-title">&#128269; חיפוש משתמשים</div>
+          <div class="row3">
+            <div>
+              <span class="flabel">מגדר</span>
+              <select id="fg" class="finput" style="margin-bottom:0;">
+                <option value="">הכל</option><option value="male">גברים</option><option value="female">נשים</option>
+              </select>
+            </div>
+            <div><span class="flabel">גיל מינ'</span><input type="number" id="fmin" class="finput" placeholder="18" style="margin-bottom:0;"></div>
+            <div><span class="flabel">גיל מקס'</span><input type="number" id="fmax" class="finput" placeholder="99" style="margin-bottom:0;"></div>
+          </div>
+          <span class="flabel" style="margin-top:10px;display:block;">אזור</span>
+          <select id="fcity" class="finput" style="margin-bottom:0;">
+            <option value="">כל הארץ</option>
+<option value="מרכז (גוש דן)">מרכז (גוש דן)</option>
+<option value="ירושלים">ירושלים</option>
+<option value="מודיעין והסביבה">מודיעין והסביבה</option>
+<option value="שפלה">שפלה</option>
+<option value="חיפה והקריות">חיפה והקריות</option>
+<option value="צפון">צפון</option>
+<option value="גליל">גליל</option>
+<option value="דרום">דרום</option>
+<option value="שומרון ויהודה">שומרון ויהודה</option>
+          </select>
+          <button class="btn" id="btn-search" style="margin-top:12px;">&#128269; חפש עכשיו</button>
+        </div>
+        <div id="sres">
+          <div class="empty-state">
+            <div class="empty-icon">&#128536;</div>
+            <div class="empty-text">לחץ חפש כדי לראות משתמשים</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT LIST + WINDOW -->
+    <div class="tab-pane flex-pane" id="tab-chat">
+      <div id="clist-wrap" style="overflow-y:auto;flex:1;">
+        <div id="clist">
+          <div class="empty-state">
+            <div class="empty-icon">&#128172;</div>
+            <div class="empty-text">עדיין אין שיחות<br><small>חפש משתמשים ושלח הודעה</small></div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-win" id="cwin">
+        <div class="cwin-top">
+          <button class="cwin-back" id="btn-back">&#8592;</button>
+          <div class="cwin-av">&#x1F495;</div>
+          <div>
+            <div class="cwin-name" id="cwin-name">-</div>
+            <div class="cwin-status" id="cwin-status">מחובר/ת</div>
+          </div>
+        </div>
+        <div class="msgs-area" id="msgs-area"></div>
+        <div id="typing-indicator" style="display:none;padding:4px 14px;font-size:11px;color:#9b8ab8;font-style:italic;">מקליד/ה...</div>
+        <div class="msg-input-bar">
+          <input type="text" id="msg-inp" class="msg-input" placeholder="כתוב הודעה...">
+          <button class="send-btn" id="btn-send">&#x27A4;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="tab-pane" id="tab-profile">
+      <div class="profile-content">
+        <div class="profile-hero">
+          <div class="profile-av-big" id="main-photo-wrap">&#x1F495;</div>
+          <div class="profile-name" id="p-name">-</div>
+          <div class="profile-uin" id="p-uin">UIN: --------</div>
+        </div>
+
+        <!-- תמונות פרופיל -->
+        <div class="pcard">
+          <div class="pcard-title">&#x1F4F7; תמונות פרופיל</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px;">
+
+            <div style="text-align:center;">
+              <div id="prev-1" style="width:100%;aspect-ratio:1;border-radius:14px;background:#f0ebff;border:2px dashed #c4b5fd;display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;cursor:pointer;">&#x1F4F7;</div>
+              <input type="file" id="file-1" accept="image/*" style="display:none;">
+              <button onclick="document.getElementById('file-1').click()" style="margin-top:6px;width:100%;padding:8px 4px;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">&#x2B06; העלה</button>
+            </div>
+
+            <div style="text-align:center;">
+              <div id="prev-2" style="width:100%;aspect-ratio:1;border-radius:14px;background:#f0ebff;border:2px dashed #c4b5fd;display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;cursor:pointer;">&#x2795;</div>
+              <input type="file" id="file-2" accept="image/*" style="display:none;">
+              <button onclick="document.getElementById('file-2').click()" style="margin-top:6px;width:100%;padding:8px 4px;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">&#x2B06; העלה</button>
+            </div>
+
+            <div style="text-align:center;">
+              <div id="prev-3" style="width:100%;aspect-ratio:1;border-radius:14px;background:#f0ebff;border:2px dashed #c4b5fd;display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;cursor:pointer;">&#x2795;</div>
+              <input type="file" id="file-3" accept="image/*" style="display:none;">
+              <button onclick="document.getElementById('file-3').click()" style="margin-top:6px;width:100%;padding:8px 4px;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">&#x2B06; העלה</button>
+            </div>
+
+          </div>
+          <p style="font-size:11px;color:#c4b5fd;text-align:center;margin-top:4px;">לחץ על "העלה" לבחירת תמונה</p>
+        </div>
+        <div class="pcard">
+          <div class="pcard-title">&#9999;&#65039; ערוך פרופיל</div>
+          <span class="flabel">שם / כינוי</span>
+          <input type="text" id="e-name" class="finput">
+          <div class="row2">
+            <div><span class="flabel">גיל</span><input type="number" id="e-age" class="finput" min="18" max="120"></div>
+            <div><span class="flabel">אזור</span>
+              <select id="e-loc" class="finput">
+                <option value="">-- בחר --</option>
+                <option value="מרכז (גוש דן)">מרכז (גוש דן)</option>
+<option value="ירושלים">ירושלים</option>
+<option value="מודיעין והסביבה">מודיעין והסביבה</option>
+<option value="שפלה">שפלה</option>
+<option value="חיפה והקריות">חיפה והקריות</option>
+<option value="צפון">צפון</option>
+<option value="גליל">גליל</option>
+<option value="דרום">דרום</option>
+<option value="שומרון ויהודה">שומרון ויהודה</option>
+              </select>
+            </div>
+          </div>
+          <span class="flabel">קצת עליי</span>
+          <textarea id="e-bio" class="finput" rows="3"></textarea>
+
+          <div class="sec" style="font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;padding-bottom:6px;border-bottom:1.5px solid #ede8f8;">מראה חיצוני</div>
+          <div class="row3">
+            <div><span class="flabel">גובה (ס"מ)</span><input type="number" id="e-height" class="finput" placeholder="170"></div>
+            <div><span class="flabel">מבנה גוף</span>
+              <select id="e-body" class="finput"><option value="">--</option><option value="slim">רזה</option><option value="average">בינוני</option><option value="athletic">ספורטיבי</option><option value="heavy">שמן</option></select>
+            </div>
+            <div><span class="flabel">עישון</span>
+              <select id="e-smoking" class="finput"><option value="">--</option><option value="no">לא</option><option value="occasionally">לפעמים</option><option value="yes">כן</option></select>
+            </div>
+          </div>
+          <div class="row3">
+            <div><span class="flabel">עיניים</span>
+              <select id="e-eyes" class="finput"><option value="">--</option><option value="brown">חום</option><option value="blue">כחול</option><option value="green">ירוק</option><option value="hazel">אגוז</option><option value="honey">דבש</option><option value="gray">אפור</option><option value="other">אחר</option></select>
+            </div>
+            <div><span class="flabel">שיער</span>
+              <select id="e-hair" class="finput"><option value="">--</option><option value="black">שחור</option><option value="brown">חום</option><option value="blonde">בלונד</option><option value="red">אדום</option><option value="gray">אפור</option><option value="satani">שטני</option><option value="other">אחר</option></select>
+            </div>
+            <div><span class="flabel">עור</span>
+              <select id="e-skin" class="finput"><option value="">--</option><option value="fair">בהיר</option><option value="medium">בינוני</option><option value="olive">זית</option><option value="brown">חום</option><option value="dark_brown">שחום</option><option value="dark">כהה</option></select>
+            </div>
+          </div>
+
+          <div class="sec" style="font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;padding-bottom:6px;border-bottom:1.5px solid #ede8f8;">רקע אישי</div>
+          <div class="row2">
+            <div><span class="flabel">מצב משפחתי</span>
+              <select id="e-marital" class="finput"><option value="">--</option><option value="single">רווק/ה</option><option value="married">נשוי/ה</option><option value="divorced">גרוש/ה</option><option value="widowed">אלמן/ה</option><option value="separated">פרוד/ה</option></select>
+            </div>
+            <div><span class="flabel">לאום</span>
+              <select id="e-religion" class="finput"><option value="">--</option><option value="secular">חילוני</option><option value="jewish">יהודי</option><option value="muslim">מוסלמי</option><option value="christian">נוצרי</option><option value="druze">דרוזי</option><option value="other">אחר</option></select>
+            </div>
+          </div>
+          <span class="flabel">יחס לדת</span>
+          <select id="e-religion-attitude" class="finput"><option value="">--</option><option value="secular">חילוני</option><option value="traditional">מסורתי</option><option value="religious">דתי</option><option value="other">אחר</option></select>
+
+          <div class="ok" id="p-ok">&#9989; הפרופיל עודכן בהצלחה!</div>
+          <button class="btn" id="btn-save">שמור שינויים</button>
+        </div>
+        <div class="pcard">
+          <div class="pcard-title">&#128274; שינוי סיסמה</div>
+          <span class="flabel">סיסמה נוכחית</span>
+          <input type="password" id="e-pass-old" class="finput" placeholder="••••••••">
+          <span class="flabel">סיסמה חדשה</span>
+          <input type="password" id="e-pass-new" class="finput" placeholder="לפחות 6 תווים">
+          <div class="err" id="pass-err"></div>
+          <div class="ok" id="pass-ok">&#9989; הסיסמה שונתה!</div>
+          <button class="btn" id="btn-change-pass">שנה סיסמה</button>
+        </div>
+        <div class="pcard">
+          <button class="btn btn-out" id="btn-logout">התנתק</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <button class="bnav-btn on" id="nb-search" data-tab="search" onclick="showTabGlobal('search')">
+      <span class="bnav-icon">&#128269;</span>
+      <span class="bnav-label">חיפוש</span>
+    </button>
+    <button class="bnav-btn" id="nb-chat" data-tab="chat" onclick="showTabGlobal('chat')">
+      <span class="bnav-icon bnav-badge">&#128172;<span class="badge" id="chat-badge" style="display:none;">0</span></span>
+      <span class="bnav-label">הודעות</span>
+    </button>
+    <button class="bnav-btn" id="nb-profile" data-tab="profile" onclick="showTabGlobal('profile')">
+      <span class="bnav-icon">&#128100;</span>
+      <span class="bnav-label">פרופיל</span>
+    </button>
   </div>
 </div>
 
-<!-- חיפוש משתמשים -->
-<div class="screen" id="sc-search">
-  <div class="card search-card">
-    <div class="section-title">חיפוש משתמשים</div>
-    <div class="fg"><label>שם (חיפוש חופשי)</label><input type="text" id="s-name" placeholder="שם או כינוי"/></div>
-    <div class="fg"><label>מספר מזהה (UIN)</label><input type="text" id="s-uin" placeholder="12345678"/></div>
-    <div class="row2">
-      <div class="fg"><label>מגדר</label>
-        <select id="s-gender">
-          <option value="">הכל</option>
-          <option value="male">זכר</option>
-          <option value="female">נקבה</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-      <div class="fg"><label>עיר</label><input type="text" id="s-location" placeholder="תל אביב..."/></div>
-    </div>
-    <div class="fg"><label>אזור מגורים</label>
-      <select id="s-region">
-        <option value="">הכל</option>
-        <option value="north">צפון</option>
-        <option value="haifa">חיפה והקריות</option>
-        <option value="center">מרכז</option>
-        <option value="tel_aviv">תל אביב</option>
-        <option value="jerusalem">ירושלים</option>
-        <option value="shfela">שפלה</option>
-        <option value="south">דרום</option>
-        <option value="other">אחר</option>
-      </select>
-    </div>
-    <div class="row2">
-      <div class="fg"><label>גיל מינ׳</label><input type="number" id="s-min-age" min="18" max="120"/></div>
-      <div class="fg"><label>גיל מקס׳</label><input type="number" id="s-max-age" min="18" max="120"/></div>
-    </div>
-    <div class="err" id="s-err"></div>
-    <button class="btn-main" id="btn-search">חפש</button>
-    <button class="btn-sec" id="btn-search-back">חזרה</button>
-    <div class="results-list" id="search-results"></div>
-  </div>
-</div>
-
-<!-- רשימת צ'אטים -->
-<div class="screen" id="sc-chats">
-  <div class="card search-card">
-    <div class="section-title">הצ'אטים שלי</div>
-    <div class="results-list" id="chats-list"></div>
-    <button class="btn-sec" id="btn-chats-back">חזרה</button>
-  </div>
-</div>
-
-<!-- שיחה -->
-<div class="screen" id="sc-chat">
-  <div class="card search-card">
-    <div class="chat-header">
-      <div class="chat-header-logo"><span class="p">Fun</span><span class="t">Together</span></div>
-      <div class="chat-partner" id="chat-with-name">שיחה</div>
-    </div>
-    <div class="chat-thread" id="chat-thread"></div>
-    <div class="err" id="chat-err"></div>
-    <div class="chat-input-row">
-      <textarea id="chat-input" placeholder="הקלד/י הודעה... (Enter לשליחה, Shift+Enter לשורה חדשה)" rows="2"></textarea>
-      <button class="send-msg-btn" id="btn-chat-send">שלח</button>
-    </div>
-    <button class="btn-sec" id="btn-chat-back">חזרה</button>
-  </div>
-</div>
-
-<!-- הגדרות / עריכת פרופיל -->
-<div class="screen" id="sc-settings">
-  <div class="card search-card">
-    <div class="section-title">הגדרות פרופיל</div>
-
-    <div class="section-title">פרטים בסיסיים</div>
-    <div class="fg"><label>שם / כינוי</label><input type="text" id="st-name" placeholder="StarSeeker_77"/></div>
-    <div class="row2">
-      <div class="fg"><label>גיל</label><input type="number" id="st-age" min="18" max="120"/></div>
-      <div class="fg"><label>מגדר</label>
-        <select id="st-gender">
-          <option value="male">זכר</option>
-          <option value="female">נקבה</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-    </div>
-    <div class="fg"><label>עיר מגורים</label><input type="text" id="st-location" placeholder="תל אביב, חיפה..."/></div>
-    <div class="fg"><label>אזור מגורים</label>
-      <select id="st-region">
-        <option value="">-- בחר --</option>
-        <option value="north">צפון</option>
-        <option value="haifa">חיפה והקריות</option>
-        <option value="center">מרכז</option>
-        <option value="tel_aviv">תל אביב</option>
-        <option value="jerusalem">ירושלים</option>
-        <option value="shfela">שפלה</option>
-        <option value="south">דרום</option>
-        <option value="other">אחר</option>
-      </select>
-    </div>
-
-    <div class="section-title">מראה חיצוני</div>
-    <div class="row2">
-      <div class="fg"><label>גובה (ס"מ)</label><input type="number" id="st-height" min="100" max="250" placeholder="170"/></div>
-      <div class="fg"><label>מסגרת גוף</label>
-        <select id="st-body">
-          <option value="">-- בחר --</option>
-          <option value="slim">רזה</option>
-          <option value="average">בינוני</option>
-          <option value="athletic">ספורטיבי</option>
-          <option value="heavy">שמן</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-    </div>
-    <div class="row3">
-      <div class="fg"><label>צבע עיניים</label>
-        <select id="st-eyes">
-          <option value="">--</option>
-          <option value="brown">חום</option>
-          <option value="blue">כחול</option>
-          <option value="green">ירוק</option>
-          <option value="black">שחור</option>
-          <option value="honey">דבש</option>
-          <option value="gray">אפור</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-      <div class="fg"><label>צבע שיער</label>
-        <select id="st-hair">
-          <option value="">--</option>
-          <option value="black">שחור</option>
-          <option value="brown">חום</option>
-          <option value="blonde">בלונד</option>
-          <option value="chestnut">שטני</option>
-          <option value="ginger">ג'ינג'י</option>
-          <option value="red">אדום</option>
-          <option value="gray">אפור</option>
-          <option value="white">לבן</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-      <div class="fg"><label>צבע עור</label>
-        <select id="st-skin">
-          <option value="">--</option>
-          <option value="black">שחור</option>
-          <option value="dark">כהה</option>
-          <option value="tan">שזוף</option>
-          <option value="light">בהיר</option>
-          <option value="pale">לבנבן</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-    </div>
-    <div class="fg"><label>סגנון שיער</label>
-      <select id="st-hair-style">
-        <option value="">--</option>
-        <option value="short">קצר</option>
-        <option value="long">ארוך</option>
-        <option value="bald">קירח</option>
-        <option value="other">אחר</option>
-      </select>
-    </div>
-
-    <div class="section-title">רקע אישי</div>
-    <div class="row2">
-      <div class="fg"><label>מצב משפחתי</label>
-        <select id="st-marital">
-          <option value="">-- בחר --</option>
-          <option value="single">רווק/ה</option>
-          <option value="divorced">גרוש/ה</option>
-          <option value="widowed">אלמן/ה</option>
-          <option value="separated">פרוד/ה</option>
-          <option value="married">נשוי/אה</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-      <div class="fg"><label>דת</label>
-        <select id="st-religion">
-          <option value="">-- בחר --</option>
-          <option value="secular">חילוני</option>
-          <option value="jewish">יהודי</option>
-          <option value="muslim">מוסלמי</option>
-          <option value="christian">נוצרי</option>
-          <option value="other">אחר</option>
-          <option value="prefer_not_to_say">מעדיפ/ה לא לציין</option>
-        </select>
-      </div>
-    </div>
-    <div class="fg"><label>עישון</label>
-      <select id="st-smoking">
-        <option value="">-- בחר --</option>
-        <option value="no">לא מעשן/ת</option>
-        <option value="occasionally">לפעמים</option>
-        <option value="yes">מעשן/ת</option>
-      </select>
-    </div>
-    <div class="fg"><label>קצת עליי</label><textarea id="st-bio" rows="3" placeholder="ספר/י קצת על עצמך..."></textarea></div>
-
-    <div class="err" id="st-err"></div>
-    <div class="suc" id="st-suc"></div>
-    <button class="btn-main" id="btn-st-save">שמור שינויים ✓</button>
-
-    <div class="section-title" style="margin-top:24px;">שינוי סיסמה</div>
-    <div class="fg"><label>סיסמה נוכחית</label><input type="password" id="st-oldpass" placeholder="••••••••"/></div>
-    <div class="fg"><label>סיסמה חדשה (לפחות 6 תווים)</label><input type="password" id="st-newpass" placeholder="••••••••"/></div>
-    <div class="err" id="st-pass-err"></div>
-    <div class="suc" id="st-pass-suc"></div>
-    <button class="btn-sec" id="btn-st-changepass">שנה סיסמה</button>
-
-    <button class="btn-sec" id="btn-settings-back" style="margin-top:16px;">חזרה</button>
-  </div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="/push-client.js"></script>
 <script>
-var API="https://funtogether-server-production.up.railway.app";
-function go(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
-function showErr(id,msg){var e=document.getElementById(id);e.innerHTML=msg;e.style.display='block';}
-function hideErr(id){document.getElementById(id).style.display='none';}
-function val(id){return document.getElementById(id).value;}
+// Global wrapper for inline onclick
 
-document.getElementById('btn-to-reg').onclick=function(){
-  document.getElementById('reg-form').reset();
-  hideErr('r-err');
-  go('sc-register');
-};
-document.getElementById('btn-to-login').onclick=function(){go('sc-login');};
-document.getElementById('btn-to-main').onclick=function(){go('sc-main');};
-document.getElementById('btn-to-search').onclick=function(){
-  if(!localStorage.getItem('token')){go('sc-login');return;}
-  go('sc-search');
-};
-document.getElementById('btn-search-back').onclick=function(){go('sc-main');};
-document.getElementById('btn-logout').onclick=function(){
-  var token=localStorage.getItem('token');
-  if(token)unsubscribeFromPush(API,token).catch(function(){});
-  localStorage.removeItem('token');
-  stopChatPolling();
-  if(socket){socket.disconnect();socket=null;}
-  unreadCounts={};updateChatBadge();
-  go('sc-login');
-};
+// Forgot password - 2 step flow
+var _forgotEmail = "";
+document.addEventListener("DOMContentLoaded", function() {
+  var lnk = document.getElementById("lnk-forgot");
+  if (lnk) {
+    lnk.addEventListener("click", function() {
+      document.getElementById("modal-forgot").style.display = "flex";
+      document.getElementById("forgot-step1").style.display = "block";
+      document.getElementById("forgot-step2").style.display = "none";
+      document.getElementById("forgot-email").value = document.getElementById("l-email").value || "";
+      document.getElementById("forgot-err1").style.display = "none";
+    });
+  }
 
-// ── צ'אט בזמן אמת ──
-var socket=null;
-var currentChatUin=null;
-var myName=null;
-var unreadCounts={};
-var chatPollTimer=null;
-var lastMsgCount=0;
+  // Close
+  document.getElementById("btn-forgot-close").addEventListener("click", function() {
+    document.getElementById("modal-forgot").style.display = "none";
+  });
 
-function updateChatBadge(){
-  var total=Object.values(unreadCounts).reduce(function(a,b){return a+b;},0);
-  var btn=document.getElementById('btn-to-chats');
-  if(total>0){btn.textContent='הצ\'אטים שלי 💬 ('+total+')';}
-  else{btn.textContent='הצ\'אטים שלי 💬';}
-}
-function ensureSocket(token){
-  if(socket)return socket;
-  socket=io(API,{auth:{token:token},transports:['websocket','polling']});
-  socket.on('new_message',function(data){
-    var suid=String(data.sender_uin);
-    if(currentChatUin&&suid===String(currentChatUin)){
-      appendMsg(data.content,false);
-    } else {
-      unreadCounts[suid]=(unreadCounts[suid]||0)+1;
-      updateChatBadge();
-      var chatsScreen=document.getElementById('sc-chats');
-      if(chatsScreen&&chatsScreen.classList.contains('active')){
-        var t2=localStorage.getItem('token');
-        if(t2){fetch(API+'/api/conversations',{headers:{'Authorization':'Bearer '+t2}}).then(function(r){return r.json();}).then(function(d){renderChats(d.conversations||[]);}).catch(function(){});}
+  // Back
+  document.getElementById("btn-forgot-back").addEventListener("click", function() {
+    document.getElementById("forgot-step1").style.display = "block";
+    document.getElementById("forgot-step2").style.display = "none";
+  });
+
+  // Step 1: Send code
+  document.getElementById("btn-forgot-send").addEventListener("click", function() {
+    var email = document.getElementById("forgot-email").value.trim();
+    var errEl = document.getElementById("forgot-err1");
+    errEl.style.display = "none";
+    if (!email) { errEl.textContent = "נא להכניס אימייל"; errEl.style.display = "block"; return; }
+    var btn = this; btn.textContent = "שולח..."; btn.disabled = true;
+    fetch("https://funtogether-server-production.up.railway.app/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email })
+    }).then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.success) { errEl.textContent = data.error || "שגיאה"; errEl.style.display = "block"; return; }
+      _forgotEmail = email;
+      if (data.code) {
+        if(typeof emailjs !== "undefined") emailjs.send("funtogether", "template_d3s85ge", {
+          to_email: email, name: data.name || email,
+          message: "קוד האיפוס שלך ב-FunTogether: " + data.code + "\n\nהקוד תקף ל-15 דקות."
+        }).catch(function() {});
       }
-    }
+      document.getElementById("forgot-step1").style.display = "none";
+      document.getElementById("forgot-step2").style.display = "block";
+      document.getElementById("forgot-code").value = "";
+      document.getElementById("forgot-newpass").value = "";
+      document.getElementById("forgot-err2").style.display = "none";
+      document.getElementById("forgot-ok").style.display = "none";
+    }).catch(function() {
+      errEl.textContent = "שגיאת חיבור. נסה שוב.";
+      errEl.style.display = "block";
+    }).finally(function() { btn.textContent = "שלח קוד"; btn.disabled = false; });
   });
-  return socket;
-}
-function appendMsg(content,mine){
-  var thread=document.getElementById('chat-thread');
-  var div=document.createElement('div');
-  div.className='msg-bubble '+(mine?'msg-mine':'msg-theirs');
-  div.textContent=content;
-  thread.appendChild(div);
-  thread.scrollTop=thread.scrollHeight;
-}
-function startChatPolling(uin,token){
-  stopChatPolling();
-  chatPollTimer=setInterval(async function(){
-    if(!currentChatUin)return;
-    try{
-      var r=await fetch(API+'/api/messages/'+uin,{headers:{'Authorization':'Bearer '+token}});
-      if(!r.ok)return;
-      var d=await r.json();
-      var msgs=d.messages||[];
-      if(msgs.length>lastMsgCount){
-        var thread=document.getElementById('chat-thread');
-        thread.innerHTML='';
-        msgs.forEach(function(m){appendMsg(m.content,m.sender_uin!==uin);});
-        lastMsgCount=msgs.length;
-      }
-    }catch(e){}
-  },3000);
-}
-function stopChatPolling(){
-  if(chatPollTimer){clearInterval(chatPollTimer);chatPollTimer=null;}
-}
-async function openChat(uin,name){
-  var token=localStorage.getItem('token');
-  if(!token){go('sc-login');return;}
-  stopChatPolling();
-  currentChatUin=String(uin);
-  delete unreadCounts[String(uin)];
-  updateChatBadge();
-  document.getElementById('chat-with-name').textContent='שיחה עם '+name;
-  document.getElementById('chat-thread').innerHTML='';
-  hideErr('chat-err');
-  ensureSocket(token);
-  try{
-    var res=await fetch(API+'/api/messages/'+uin,{headers:{'Authorization':'Bearer '+token}});
-    if(res.status===401||res.status===403){localStorage.removeItem('token');go('sc-login');return;}
-    var data=await res.json();
-    var msgs=data.messages||[];
-    msgs.forEach(function(m){appendMsg(m.content,m.sender_uin!==uin);});
-    lastMsgCount=msgs.length;
-  }catch(e){showErr('chat-err','שגיאת חיבור לשרת');}
-  startChatPolling(uin,token);
-  go('sc-chat');
-}
-document.getElementById('btn-chat-send').onclick=function(){
-  var token=localStorage.getItem('token');
-  if(!token){go('sc-login');return;}
-  var content=val('chat-input').trim();
-  if(!content||!currentChatUin)return;
-  ensureSocket(token).emit('send_message',{recipientUin:String(currentChatUin),content:content});
-  appendMsg(content,true);
-  lastMsgCount++;
-  var inp=document.getElementById('chat-input');inp.value='';inp.style.height='';inp.focus();
-};
-document.getElementById('chat-input').addEventListener('keydown',function(e){
-  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();document.getElementById('btn-chat-send').click();}
+
+  // Step 2: Reset password
+  document.getElementById("btn-forgot-reset").addEventListener("click", function() {
+    var code = document.getElementById("forgot-code").value.trim();
+    var newpass = document.getElementById("forgot-newpass").value;
+    var errEl = document.getElementById("forgot-err2");
+    var okEl = document.getElementById("forgot-ok");
+    errEl.style.display = "none"; okEl.style.display = "none";
+    if (!code) { errEl.textContent = "נא להכניס את הקוד"; errEl.style.display = "block"; return; }
+    if (newpass.length < 6) { errEl.textContent = "הסיסמה חייבת להיות לפחות 6 תווים"; errEl.style.display = "block"; return; }
+    var btn = this; btn.textContent = "מאפס..."; btn.disabled = true;
+    fetch("https://funtogether-server-production.up.railway.app/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: _forgotEmail, code: code, new_password: newpass })
+    }).then(function(r) { return r.json().then(function(d) { return {ok:r.ok,d:d}; }); })
+    .then(function(res) {
+      if (!res.ok) { errEl.textContent = res.d.error || "שגיאה"; errEl.style.display = "block"; return; }
+      okEl.style.display = "block";
+      setTimeout(function() { document.getElementById("modal-forgot").style.display = "none"; }, 2000);
+    }).catch(function() {
+      errEl.textContent = "שגיאת חיבור. נסה שוב.";
+      errEl.style.display = "block";
+    }).finally(function() { btn.textContent = "אפס סיסמה"; btn.disabled = false; });
+  });
 });
-document.getElementById('chat-input').addEventListener('input',function(){
-  this.style.height='auto';
-  this.style.height=Math.min(this.scrollHeight,120)+'px';
-});
-document.getElementById('btn-chat-back').onclick=function(){stopChatPolling();currentChatUin=null;go('sc-chats');};
-
-function renderChats(list){
-  var box=document.getElementById('chats-list');
-  box.innerHTML='';
-  if(!list.length){box.innerHTML='<div class="empty-msg">אין עדיין שיחות. חפש/י משתמשים כדי להתחיל!</div>';return;}
-  list.forEach(function(c){
-    var div=document.createElement('div');
-    div.className='chat-list-item';
-    div.innerHTML='<div><div class="c-name">'+c.name+'</div><div class="c-last">'+(c.last_content||'')+'</div></div>';
-    div.onclick=function(){openChat(c.uin,c.name);};
-    box.appendChild(div);
-  });
-}
-document.getElementById('btn-to-chats').onclick=async function(){
-  var token=localStorage.getItem('token');
-  if(!token){go('sc-login');return;}
-  go('sc-chats');
-  try{
-    var res=await fetch(API+'/api/conversations',{headers:{'Authorization':'Bearer '+token}});
-    if(res.status===401||res.status===403){localStorage.removeItem('token');go('sc-login');return;}
-    var data=await res.json();
-    renderChats(data.conversations||[]);
-  }catch(e){document.getElementById('chats-list').innerHTML='<div class="empty-msg">שגיאת חיבור לשרת</div>';}
-};
-document.getElementById('btn-chats-back').onclick=function(){go('sc-main');};
-
-// ── הגדרות ──
-function setSelectVal(id, val){
-  var el=document.getElementById(id);
-  if(!el||val==null)return;
-  el.value=val||'';
-}
-async function loadSettings(){
-  var token=localStorage.getItem('token');
-  if(!token)return;
-  try{
-    var res=await fetch(API+'/api/users/me',{headers:{'Authorization':'Bearer '+token}});
-    if(res.status===401||res.status===403){localStorage.removeItem('token');go('sc-login');return;}
-    var u=await res.json();
-    document.getElementById('st-name').value=u.name||'';
-    document.getElementById('st-age').value=u.age||'';
-    setSelectVal('st-gender',u.gender);
-    document.getElementById('st-location').value=u.location||'';
-    setSelectVal('st-region',u.region);
-    document.getElementById('st-height').value=u.height||'';
-    setSelectVal('st-body',u.body_type);
-    setSelectVal('st-eyes',u.eye_color);
-    setSelectVal('st-hair',u.hair_color);
-    setSelectVal('st-skin',u.skin_tone);
-    setSelectVal('st-hair-style',u.hair_style);
-    setSelectVal('st-marital',u.marital_status);
-    setSelectVal('st-religion',u.religion);
-    setSelectVal('st-smoking',u.smoking);
-    document.getElementById('st-bio').value=u.bio||'';
-  }catch(e){showErr('st-err','שגיאת חיבור לשרת');}
-}
-document.getElementById('btn-to-settings').onclick=async function(){
-  var token=localStorage.getItem('token');
-  if(!token){go('sc-login');return;}
-  hideErr('st-err');
-  document.getElementById('st-suc').style.display='none';
-  hideErr('st-pass-err');
-  document.getElementById('st-pass-suc').style.display='none';
-  document.getElementById('st-oldpass').value='';
-  document.getElementById('st-newpass').value='';
-  await loadSettings();
-  go('sc-settings');
-};
-document.getElementById('btn-settings-back').onclick=function(){go('sc-main');};
-
-document.getElementById('btn-st-save').onclick=async function(){
-  var token=localStorage.getItem('token');
-  if(!token){go('sc-login');return;}
-  hideErr('st-err');
-  document.getElementById('st-suc').style.display='none';
-  var name=document.getElementById('st-name').value.trim();
-  var age=parseInt(document.getElementById('st-age').value);
-  if(!name){showErr('st-err','נא להכניס שם');return;}
-  if(!age||age<18){showErr('st-err','נא להכניס גיל תקין (18+)');return;}
-  var body={
-    name:name, age:age,
-    gender:val('st-gender'),
-    location:document.getElementById('st-location').value.trim()||null,
-    region:val('st-region')||null,
-    height:parseInt(document.getElementById('st-height').value)||null,
-    body_type:val('st-body')||null,
-    eye_color:val('st-eyes')||null,
-    hair_color:val('st-hair')||null,
-    hair_style:val('st-hair-style')||null,
-    skin_tone:val('st-skin')||null,
-    marital_status:val('st-marital')||null,
-    religion:val('st-religion')||null,
-    smoking:val('st-smoking')||null,
-    bio:document.getElementById('st-bio').value.trim()||null
-  };
-  var btn=this;btn.textContent='שומר...';btn.disabled=true;
-  try{
-    var res=await fetch(API+'/api/users/me',{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body)});
-    if(res.status===401||res.status===403){localStorage.removeItem('token');go('sc-login');return;}
-    var data=await res.json();
-    if(!res.ok){showErr('st-err',data.error||'שגיאה בשמירה');return;}
-    document.getElementById('main-hi').textContent='שלום, '+data.name+'! 👋';
-    document.getElementById('st-suc').textContent='הפרטים עודכנו בהצלחה ✓';
-    document.getElementById('st-suc').style.display='block';
-    setTimeout(function(){document.getElementById('st-suc').style.display='none';},3000);
-  }catch(e){showErr('st-err','שגיאת חיבור לשרת');}
-  finally{btn.textContent='שמור שינויים ✓';btn.disabled=false;}
-};
-
-document.getElementById('btn-st-changepass').onclick=async function(){
-  var token=localStorage.getItem('token');
-  if(!token){go('sc-login');return;}
-  hideErr('st-pass-err');
-  document.getElementById('st-pass-suc').style.display='none';
-  var oldp=document.getElementById('st-oldpass').value;
-  var newp=document.getElementById('st-newpass').value;
-  if(!oldp){showErr('st-pass-err','נא להכניס את הסיסמה הנוכחית');return;}
-  if(newp.length<6){showErr('st-pass-err','הסיסמה החדשה חייבת להיות לפחות 6 תווים');return;}
-  var btn=this;btn.textContent='משנה...';btn.disabled=true;
-  try{
-    var res=await fetch(API+'/api/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({old_password:oldp,new_password:newp})});
-    var data=await res.json();
-    if(!res.ok){showErr('st-pass-err',data.error||'שגיאה בשינוי הסיסמה');return;}
-    document.getElementById('st-pass-suc').textContent='הסיסמה שונתה בהצלחה ✓';
-    document.getElementById('st-pass-suc').style.display='block';
-    document.getElementById('st-oldpass').value='';
-    document.getElementById('st-newpass').value='';
-    setTimeout(function(){document.getElementById('st-pass-suc').style.display='none';},3000);
-  }catch(e){showErr('st-pass-err','שגיאת חיבור לשרת');}
-  finally{btn.textContent='שנה סיסמה';btn.disabled=false;}
-};
-
-// ── שכחתי סיסמה ──
-function closeForgotModal(){
-  document.getElementById('modal-forgot').classList.remove('active');
-  document.getElementById('fp-step1').style.display='block';
-  document.getElementById('fp-step2').style.display='none';
-  document.getElementById('fp-email').value='';
-  document.getElementById('fp-code').value='';
-  document.getElementById('fp-newpass').value='';
-  hideErr('fp-err1');hideErr('fp-err2');
-  document.getElementById('fp-suc1').style.display='none';
-  document.getElementById('fp-suc2').style.display='none';
-}
-document.getElementById('btn-open-forgot').onclick=function(){
-  document.getElementById('modal-forgot').classList.add('active');
-};
-document.getElementById('btn-fp-close1').onclick=closeForgotModal;
-document.getElementById('btn-fp-close2').onclick=closeForgotModal;
-
-document.getElementById('btn-fp-send').onclick=async function(){
-  hideErr('fp-err1');
-  var email=val('fp-email').trim();
-  if(!email){showErr('fp-err1','נא להכניס אימייל');return;}
-  var btn=this;btn.textContent='שולח...';btn.disabled=true;
-  try{
-    var res=await fetch(API+'/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
-    var data=await res.json();
-    if(!res.ok){showErr('fp-err1',data.error||'שגיאה בשליחת הקוד');return;}
-    if(data.email_sent){
-      document.getElementById('fp-suc1').textContent='קוד אימות נשלח לכתובת המייל שלך. בדקו את תיבת הדואר (כולל תיקיית ספאם).';
-      document.getElementById('fp-step2-hint').textContent='בדוק/י את תיבת המייל שלך והזן/י כאן את הקוד שקיבלת, ביחד עם הסיסמה החדשה.';
-    } else {
-      document.getElementById('fp-suc1').textContent='שירות המייל לא מוגדר בשרת כרגע. לצורך בדיקה, קוד האימות הוא: '+data.code;
-      document.getElementById('fp-step2-hint').textContent='שירות המייל לא מוגדר בשרת — הקוד מוצג כאן לבדיקה בלבד: '+data.code;
-    }
-    document.getElementById('fp-suc1').style.display='block';
-    document.getElementById('fp-step1').style.display='none';
-    document.getElementById('fp-step2').style.display='block';
-  }catch(e){showErr('fp-err1','שגיאת חיבור לשרת');}
-  finally{btn.textContent='שלח קוד';btn.disabled=false;}
-};
-
-document.getElementById('btn-fp-reset').onclick=async function(){
-  hideErr('fp-err2');
-  var email=val('fp-email').trim(),code=val('fp-code').trim(),newpass=val('fp-newpass');
-  if(!code){showErr('fp-err2','נא להכניס קוד אימות');return;}
-  if(newpass.length<6){showErr('fp-err2','הסיסמה חייבת להיות לפחות 6 תווים');return;}
-  var btn=this;btn.textContent='מאפס...';btn.disabled=true;
-  try{
-    var res=await fetch(API+'/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,code:code,new_password:newpass})});
-    var data=await res.json();
-    if(!res.ok){showErr('fp-err2',data.error||'שגיאה באיפוס הסיסמה');return;}
-    document.getElementById('fp-suc2').textContent='הסיסמה אופסה בהצלחה! ניתן להתחבר.';
-    document.getElementById('fp-suc2').style.display='block';
-    setTimeout(closeForgotModal,1500);
-  }catch(e){showErr('fp-err2','שגיאת חיבור לשרת');}
-  finally{btn.textContent='אפס סיסמה';btn.disabled=false;}
-};
-
-// ── חיפוש משתמשים ──
-function renderResults(users){
-  var box=document.getElementById('search-results');
-  box.innerHTML='';
-  if(!users.length){box.innerHTML='<div class="empty-msg">לא נמצאו תוצאות</div>';return;}
-  users.forEach(function(u){
-    var div=document.createElement('div');
-    div.className='result-item';
-    var regionLabels={north:'צפון',haifa:'חיפה והקריות',center:'מרכז',tel_aviv:'תל אביב',jerusalem:'ירושלים',shfela:'שפלה',south:'דרום',other:'אחר'};
-    var regionTxt=u.region?(regionLabels[u.region]||u.region):'';
-    div.innerHTML='<div class="r-name">'+u.name+'</div>'+
-      '<div class="r-meta">'+(u.age||'')+(u.location?' · '+u.location:'')+(regionTxt?' · '+regionTxt:'')+'</div>'+
-      '<div class="r-uin">UIN: '+u.uin+'</div>'+
-      '<div class="result-actions"><button class="msg-btn" data-uin="'+u.uin+'" data-name="'+u.name.replace(/"/g,'&quot;')+'">💬 שלח הודעה</button></div>';
-    div.querySelector('.msg-btn').onclick=function(){openChat(this.dataset.uin,this.dataset.name);};
-    box.appendChild(div);
-  });
-}
-document.getElementById('btn-search').onclick=async function(){
-  hideErr('s-err');
-  var token=localStorage.getItem('token');
-  if(!token){localStorage.removeItem('token');go('sc-login');return;}
-  var params=new URLSearchParams();
-  var name=val('s-name').trim(),uin=val('s-uin').trim(),gender=val('s-gender'),
-    location=val('s-location').trim(),region=val('s-region'),minAge=val('s-min-age'),maxAge=val('s-max-age');
-  if(name)params.set('name',name);
-  if(uin)params.set('uin',uin);
-  if(gender)params.set('gender',gender);
-  if(location)params.set('location',location);
-  if(region)params.set('region',region);
-  if(minAge)params.set('min_age',minAge);
-  if(maxAge)params.set('max_age',maxAge);
-  var btn=this;btn.textContent='מחפש...';btn.disabled=true;
-  try{
-    var res=await fetch(API+'/api/users?'+params.toString(),{headers:{'Authorization':'Bearer '+token}});
-    if(res.status===401||res.status===403){localStorage.removeItem('token');go('sc-login');return;}
-    var data=await res.json();
-    if(!res.ok){showErr('s-err',data.error||'שגיאה בחיפוש');return;}
-    renderResults(data.users||[]);
-  }catch(e){showErr('s-err','שגיאת חיבור לשרת');}
-  finally{btn.textContent='חפש';btn.disabled=false;}
-};
-
-document.getElementById('btn-login').onclick=async function(){
-  hideErr('l-err');
-  var email=val('l-email').trim(),pass=val('l-pass');
-  if(!email||!pass){showErr('l-err','נא למלא אימייל וסיסמה');return;}
-  var btn=this;btn.textContent='מתחבר...';btn.disabled=true;
-  try{
-    var res=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass})});
-    var data=await res.json();
-    if(!res.ok){showErr('l-err',data.error||'שגיאה בכניסה');return;}
-    localStorage.setItem('token',data.token);
-    document.getElementById('main-hi').textContent='שלום, '+data.name+'! 👋';
-    ensureSocket(data.token);
-    go('sc-main');
-    subscribeToPush(API,data.token);
-  }catch(e){showErr('l-err','שגיאת חיבור לשרת');}
-  finally{btn.textContent='כניסה';btn.disabled=false;}
-};
-
-document.getElementById('btn-register').onclick=async function(){
-  hideErr('r-err');
-  var name=val('r-name').trim(),email=val('r-email').trim(),pass=val('r-pass');
-  var age=parseInt(val('r-age')),gender=val('r-gender');
-  if(!name){showErr('r-err','❌ נא להכניס שם/כינוי');return;}
-  if(!email){showErr('r-err','❌ נא להכניס אימייל');return;}
-  if(pass.length<6){showErr('r-err','❌ הסיסמה חייבת להיות לפחות 6 תווים');return;}
-  if(!age||age<18){showErr('r-err','❌ נא להכניס גיל (18 ומעלה)');return;}
-  var btn=this;btn.textContent='יוצר חשבון...';btn.disabled=true;
-  try{
-    var body={name:name,email:email,password:pass,age:age,gender:gender,
-      location:val('r-location').trim()||undefined,
-      region:val('r-region')||undefined,
-      height:val('r-height')?parseInt(val('r-height')):undefined,
-      body_type:val('r-body')||undefined,
-      eye_color:val('r-eyes')||undefined,
-      hair_color:val('r-hair')||undefined,
-      hair_style:val('r-hair-style')||undefined,
-      skin_tone:val('r-skin')||undefined,
-      marital_status:val('r-marital')||undefined,
-      religion:val('r-religion')||undefined,
-      smoking:val('r-smoking')||undefined,
-      bio:val('r-bio').trim()||undefined
-    };
-    Object.keys(body).forEach(function(k){if(body[k]===undefined)delete body[k];});
-    var res=await fetch(API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    var data=await res.json();
-    if(!res.ok){
-      var msg=data.error||'שגיאה בהרשמה';
-      if(Array.isArray(msg))msg=msg.map(function(e){return e.message||JSON.stringify(e);}).join('<br>');
-      showErr('r-err','❌ '+msg);return;
-    }
-    document.getElementById('uin-name').textContent='ברוכ/ה הבא/ה, '+data.name+'!';
-    document.getElementById('uin-val').textContent=data.uin;
-    localStorage.setItem('token',data.token);
-    document.getElementById('main-hi').textContent='שלום, '+data.name+'! 👋';
-    ensureSocket(data.token);
-    go('sc-uin');
-    subscribeToPush(API,data.token);
-  }catch(e){showErr('r-err','❌ לא ניתן להתחבר לשרת');}
-  finally{btn.textContent='יצירת חשבון ✨';btn.disabled=false;}
-};
 </script>
+
+<div id="modal-forgot" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:380px;">
+    
+    <!-- שלב 1: הכנסת אימייל -->
+    <div id="forgot-step1">
+      <div style="font-size:16px;font-weight:800;margin-bottom:6px;text-align:center;">שכחתי סיסמה</div>
+      <p style="font-size:13px;color:#9b8ab8;text-align:center;margin-bottom:16px;">הכנס את האימייל שלך ונשלח לך קוד לאיפוס</p>
+      <span style="font-size:12px;color:#9b8ab8;font-weight:600;margin-bottom:4px;display:block;">אימייל</span>
+      <input type="email" id="forgot-email" style="width:100%;padding:12px 14px;border:1.5px solid #ede8f8;border-radius:12px;font-family:inherit;font-size:14px;outline:none;margin-bottom:12px;" placeholder="your@email.com">
+      <div id="forgot-err1" style="display:none;background:#fff0f0;border:1px solid #ffc0c0;border-radius:10px;padding:10px;font-size:13px;color:#cc0000;margin-bottom:12px;text-align:center;"></div>
+      <button id="btn-forgot-send" style="width:100%;padding:13px;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border:none;border-radius:12px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">שלח קוד</button>
+      <button id="btn-forgot-close" style="width:100%;padding:12px;background:#fff;color:#7c3aed;border:1.5px solid #c4b5fd;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">סגור</button>
+    </div>
+
+    <!-- שלב 2: הכנסת קוד וסיסמה חדשה -->
+    <div id="forgot-step2" style="display:none;">
+      <div style="font-size:16px;font-weight:800;margin-bottom:6px;text-align:center;">איפוס סיסמה</div>
+      <p style="font-size:13px;color:#9b8ab8;text-align:center;margin-bottom:16px;">נשלח קוד לאימייל שלך. הכנס אותו יחד עם הסיסמה החדשה.</p>
+      <span style="font-size:12px;color:#9b8ab8;font-weight:600;margin-bottom:4px;display:block;">קוד שקיבלת במייל</span>
+      <input type="text" id="forgot-code" maxlength="6" style="width:100%;padding:12px 14px;border:1.5px solid #ede8f8;border-radius:12px;font-family:inherit;font-size:20px;outline:none;margin-bottom:12px;text-align:center;letter-spacing:8px;" placeholder="000000">
+      <span style="font-size:12px;color:#9b8ab8;font-weight:600;margin-bottom:4px;display:block;">סיסמה חדשה</span>
+      <input type="password" id="forgot-newpass" style="width:100%;padding:12px 14px;border:1.5px solid #ede8f8;border-radius:12px;font-family:inherit;font-size:14px;outline:none;margin-bottom:12px;" placeholder="לפחות 6 תווים">
+      <div id="forgot-err2" style="display:none;background:#fff0f0;border:1px solid #ffc0c0;border-radius:10px;padding:10px;font-size:13px;color:#cc0000;margin-bottom:12px;text-align:center;"></div>
+      <div id="forgot-ok" style="display:none;background:#f0fff4;border:1px solid #b7f5c4;border-radius:10px;padding:10px;font-size:13px;color:#166534;margin-bottom:12px;text-align:center;">הסיסמה אופסה בהצלחה! אפשר להתחבר.</div>
+      <button id="btn-forgot-reset" style="width:100%;padding:13px;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;border:none;border-radius:12px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">אפס סיסמה</button>
+      <button id="btn-forgot-back" style="width:100%;padding:12px;background:#fff;color:#7c3aed;border:1.5px solid #c4b5fd;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">חזור</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div class="umodal-overlay" id="umodal-overlay" onclick="window.closeUserModal(event)">
+  <div class="umodal" id="umodal">
+    <div id="umodal-inner"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var API = "https://funtogether-server-production.up.railway.app";
+  var tok = localStorage.getItem("ft_tok");
+  var me  = JSON.parse(localStorage.getItem("ft_me") || "null");
+  var chats = {};
+  var activeUin = null;
+  var unread = 0;
+
+  // מפות תרגום ערכים לעברית (משותף לחיפוש ולמודל הפרופיל)
+  var LBL = {
+    gender:            { male:"זכר", female:"נקבה", other:"אחר" },
+    body_type:         { slim:"רזה", average:"בינוני", athletic:"ספורטיבי", heavy:"שמן" },
+    religion:          { secular:"חילוני", jewish:"יהודי", muslim:"מוסלמי", christian:"נוצרי", druze:"דרוזי", other:"אחר" },
+    religion_attitude: { secular:"חילוני", traditional:"מסורתי", religious:"דתי", other:"אחר" },
+    smoking:           { no:"לא מעשן/ת", occasionally:"לפעמים", yes:"מעשן/ת" },
+    eye_color:         { brown:"חום", blue:"כחול", green:"ירוק", hazel:"אגוז", honey:"דבש", gray:"אפור", other:"אחר" },
+    hair_color:        { black:"שחור", brown:"חום", blonde:"בלונד", red:"אדום", gray:"אפור", satani:"שטני", other:"אחר" },
+    skin_tone:         { fair:"בהיר", medium:"בינוני", olive:"זית", brown:"חום", dark_brown:"שחום", dark:"כהה" },
+    marital_status:    { single:"רווק/ה", married:"נשוי/ה", divorced:"גרוש/ה", widowed:"אלמן/ה", separated:"פרוד/ה" }
+  };
+  function lbl(field, val) { return (LBL[field] && LBL[field][val]) || (val || ""); }
+
+  function ge(id) { return document.getElementById(id); }
+  function gv(id) { return ge(id).value; }
+  function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+  // ── SOCKET ──
+  var socket = null;
+  function initSocket() {
+    if (socket) socket.disconnect();
+    socket = io("https://funtogether-server-production.up.railway.app", {
+      auth: { token: tok }
+    });
+    socket.on("new_message", function(data) {
+      var uin = data.sender_uin;
+      if (!chats[uin]) chats[uin] = { name: data.sender_name || uin, msgs: [] };
+      var d = new Date(), t = d.getHours() + ":" + (d.getMinutes()+"").padStart(2,"0");
+      chats[uin].msgs.push({ dir: "in", text: data.content, time: t });
+      if (activeUin === uin) { renderMsgs(); }
+      else { unread++; updateBadge(); }
+      renderCList();
+    });
+    socket.on("typing", function(data) {
+      if (data.uin === activeUin) {
+        var el = ge("typing-indicator");
+        if (el) { el.style.display = "block"; clearTimeout(el._t); el._t = setTimeout(function(){ el.style.display="none"; }, 2000); }
+      }
+    });
+    // אחרי חיבור מחדש — רענן את השיחה הפעילה כדי למשוך הודעות שהוחמצו
+    socket.on("connect", function() {
+      if (activeUin) openChat(activeUin, chats[activeUin] ? chats[activeUin].name : activeUin);
+    });
+  }
+
+  function handleUnauth() {
+    if (socket) { socket.disconnect(); socket = null; }
+    localStorage.removeItem("ft_tok"); localStorage.removeItem("ft_me");
+    tok = null; me = null; chats = {}; activeUin = null;
+    showPage("pg-login");
+  }
+
+  // ── PAGE NAV ──
+  function showPage(id) {
+    document.querySelectorAll(".pg").forEach(function(p) { p.classList.remove("on"); });
+    var pg = ge(id);
+    if (pg) pg.classList.add("on");
+    ge("app-shell").classList.remove("on");
+  }
+  function showApp() {
+    document.querySelectorAll(".pg").forEach(function(p) { p.classList.remove("on"); });
+    ge("app-shell").classList.add("on");
+  }
+
+  // ── TAB NAV ──
+  function showTab(name) {
+    document.querySelectorAll(".tab-pane").forEach(function(t) { t.classList.remove("on"); });
+    document.querySelectorAll(".bnav-btn").forEach(function(b) { b.classList.remove("on"); });
+    var pane = ge("tab-"+name); if (pane) pane.classList.add("on");
+    var btn = ge("nb-"+name); if (btn) btn.classList.add("on");
+    if (name === "profile") loadProfile();
+    if (name === "chat") { renderCList(); unread=0; updateBadge(); }
+    if (name === "search") doSearch();
+  }
+  window.showTabGlobal = function(n) { showTab(n); };
+
+  function updateBadge() {
+    var badge = ge("chat-badge");
+    if (unread > 0) { badge.textContent = unread; badge.style.display = "flex"; }
+    else badge.style.display = "none";
+  }
+
+  // ── CHAT ──
+  function openChat(uin, name) {
+    if (!chats[uin]) chats[uin] = { name: name, msgs: [] };
+    activeUin = uin;
+    ge("cwin-name").textContent = name;
+    ge("cwin-status").textContent = "טוען...";
+    ge("clist-wrap").style.display = "none";
+    ge("cwin").classList.add("on");
+    renderMsgs();
+    showTab("chat");
+    fetch(API + "/api/messages/" + uin, { headers: { Authorization: "Bearer " + tok } })
+      .then(function(r) {
+        if (r.status === 401) { handleUnauth(); return Promise.reject(); }
+        return r.json();
+      })
+      .then(function(d) {
+        if (d.messages && d.messages.length) {
+          chats[uin].msgs = d.messages.map(function(m) {
+            return { dir: m.sender_uin === me.uin ? "out" : "in", text: m.content, time: (m.created_at || "").substring(11,16) };
+          });
+          renderMsgs();
+        }
+        ge("cwin-status").textContent = "מחובר/ת";
+      }).catch(function() { ge("cwin-status").textContent = ""; });
+  }
+
+  function sanitize(str) {
+    return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+
+  function renderMsgs() {
+    if (!activeUin || !chats[activeUin]) return;
+    var msgs = chats[activeUin].msgs;
+    var html = "<div class='sys-msg'>&#8212; השיחה התחילה &#8212;</div>";
+    for (var i = 0; i < msgs.length; i++) {
+      var m = msgs[i];
+      html += "<div class='msg-" + m.dir + "'>" + sanitize(m.text)
+            + "<div class='msg-time'>" + m.time + "</div></div>";
+    }
+    var area = ge("msgs-area");
+    area.innerHTML = html;
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function renderCList() {
+    var keys = Object.keys(chats);
+    var el = ge("clist");
+    if (!keys.length) {
+      el.innerHTML = "<div class='empty-state'><div class='empty-icon'>&#128172;</div><div class='empty-text'>עדיין אין שיחות<br><small>חפש משתמשים ושלח הודעה</small></div></div>";
+      return;
+    }
+    var html = "";
+    for (var i = 0; i < keys.length; i++) {
+      var uin = keys[i], d = chats[uin];
+      var last = d.msgs.length ? sanitize(d.msgs[d.msgs.length-1].text) : "לחץ לפתיחת שיחה";
+      var avHtml = d.photo ? "<img src='" + API + d.photo + "' style='width:100%;height:100%;object-fit:cover;border-radius:50%;'>" : "&#x1F495;";
+      html += "<div class='chat-row' data-uin='" + uin + "' data-name='" + sanitize(d.name) + "'>"
+            + "<div class='cav' style='" + (d.photo ? "background:none;overflow:hidden;" : "") + "'>" + avHtml + "</div>"
+            + "<div style='flex:1;min-width:0;'><div class='cname'>" + sanitize(d.name) + "</div>"
+            + "<div class='cprev'>" + last + "</div></div></div>";
+    }
+    el.innerHTML = html;
+    el.querySelectorAll(".chat-row").forEach(function(row) {
+      row.addEventListener("click", function() { openChat(this.dataset.uin, this.dataset.name); });
+    });
+  }
+
+  function doSend() {
+    var inp = ge("msg-inp"), text = inp.value.trim();
+    if (!text || !activeUin) return;
+    inp.value = "";
+    var d = new Date(), t = d.getHours() + ":" + (d.getMinutes()+"").padStart(2,"0");
+    chats[activeUin].msgs.push({ dir: "out", text: text, time: t });
+    renderMsgs(); renderCList();
+    fetch(API + "/api/messages/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
+      body: JSON.stringify({ receiver_uin: activeUin, content: text })
+    }).then(function(r) {
+      if (r.status === 401) { handleUnauth(); return; }
+      if (!r.ok) {
+        var area = ge("msgs-area");
+        area.insertAdjacentHTML("beforeend", "<div class='sys-msg' style='color:#ef4444;'>⚠️ ההודעה לא נשלחה — נסה שוב</div>");
+        area.scrollTop = area.scrollHeight;
+      }
+    }).catch(function() {
+      var area = ge("msgs-area");
+      area.insertAdjacentHTML("beforeend", "<div class='sys-msg' style='color:#ef4444;'>⚠️ שגיאה בשליחה — בדוק חיבור</div>");
+      area.scrollTop = area.scrollHeight;
+    });
+  }
+
+  function doSearch() {
+    var fmin = parseInt(gv("fmin")||"0"), fmax = parseInt(gv("fmax")||"120");
+    if (fmin && fmax && fmin > fmax) {
+      ge("sres").innerHTML = "<div class='empty-state'><div class='empty-icon'>⚠️</div><div class='empty-text'>גיל מינ' לא יכול להיות גדול מגיל מקס'</div></div>";
+      return;
+    }
+    var btn = ge("btn-search"); btn.textContent = "מחפש..."; btn.disabled = true;
+    var q = new URLSearchParams();
+    if (gv("fg"))    q.append("gender",   gv("fg"));
+    if (gv("fmin"))  q.append("min_age",  gv("fmin"));
+    if (gv("fmax"))  q.append("max_age",  gv("fmax"));
+    if (gv("fcity").trim()) q.append("location", gv("fcity").trim());
+    fetch(API + "/api/users?" + q.toString(), { headers: { Authorization: "Bearer " + tok } })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var users = data.users || [];
+        if (!users.length) {
+          ge("sres").innerHTML = "<div class='empty-state'><div class='empty-icon'>&#128532;</div><div class='empty-text'>לא נמצאו משתמשים<br><small>נסה סינון אחר</small></div></div>";
+          return;
+        }
+        var html = "<div class='users-grid'>";
+        for (var i = 0; i < users.length; i++) {
+          var u = users[i];
+          var icon = u.gender==="female" ? "&#x1F469;" : u.gender==="male" ? "&#x1F468;" : "&#x1F9D1;";
+          var sName = sanitize(u.name || "");
+          var sUin  = sanitize(u.uin || "");
+          var sGen  = sanitize(u.gender || "");
+          var tags = "";
+          if (u.location)  tags += "<span class='utag'>&#128205; " + sanitize(u.location) + "</span>";
+          if (u.body_type) tags += "<span class='utag'>" + sanitize(lbl("body_type", u.body_type)) + "</span>";
+          if (u.religion)  tags += "<span class='utag'>" + sanitize(lbl("religion", u.religion)) + "</span>";
+          var avatarHtml = u.photo1
+            ? "<div class='uav' style='background:none;overflow:hidden;'><img src='" + "https://funtogether-server-production.up.railway.app" + sanitize(u.photo1) + "' style='width:100%;height:100%;object-fit:cover;border-radius:50%;'></div>"
+            : "<div class='uav'>" + icon + "</div>";
+          html += "<div class='ucard' data-uin='" + sUin + "' data-name='" + sName + "' data-gender='" + sGen + "'>"
+                + avatarHtml
+                + "<div class='uname'>" + sName + "</div>"
+                + "<div class='uinfo'>" + sanitize(lbl("gender", u.gender)) + ", " + sanitize(u.age) + (u.location ? "<br>" + sanitize(u.location) : "") + "</div>"
+                + "<div style='margin-bottom:10px;'>" + tags + "</div>"
+                + "<button class='btn btn-sm chat-btn' data-uin='" + sUin + "' data-name='" + sName + "' data-gender='" + sGen + "'>&#128140; שלח הודעה</button>"
+                + "</div>";
+        }
+        html += "</div>";
+        ge("sres").innerHTML = html;
+        ge("sres").querySelectorAll(".ucard").forEach(function(c) {
+          c.addEventListener("click", function(e) {
+            if (!e.target.classList.contains("chat-btn")) openUserModal(this.dataset.uin, this.dataset.name, this.dataset.gender);
+          });
+        });
+        ge("sres").querySelectorAll(".chat-btn").forEach(function(b) {
+          b.addEventListener("click", function(e) {
+            e.stopPropagation();
+            openUserModal(this.dataset.uin, this.dataset.name, this.dataset.gender);
+          });
+        });
+      }).catch(function() {
+        ge("sres").innerHTML = "<div class='empty-state'><div class='empty-icon'>&#128561;</div><div class='empty-text'>שגיאת חיבור לשרת</div></div>";
+      }).finally(function() { btn.innerHTML = "&#128269; חפש עכשיו"; btn.disabled = false; });
+  }
+
+  // ── USER MODAL ──
+  var umodalUin = null, umodalNameStr = null;
+
+  function openUserModal(uin, name, gender) {
+    umodalUin = uin;
+    umodalNameStr = name;
+    ge("umodal-overlay").classList.add("on");
+    ge("umodal-inner").innerHTML = "<div style='text-align:center;padding:40px;color:#9b8ab8;'>⏳ טוען פרופיל...</div>";
+
+    fetch(API + "/api/users/" + uin, { headers: { Authorization: "Bearer " + tok } })
+      .then(function(r) { return r.json(); })
+      .then(function(u) { renderUmodal(u); })
+      .catch(function() {
+        renderUmodal({ uin: uin, name: name, gender: gender });
+      });
+  }
+
+  function renderUmodal(u) {
+    var icon = u.gender==="female" ? "👩" : u.gender==="male" ? "👨" : "🧑";
+    var ph = [];
+    if (u.photo1) ph.push(u.photo1);
+    if (u.photo2) ph.push(u.photo2);
+    if (u.photo3) ph.push(u.photo3);
+
+    // תמונות
+    var photosHtml = "<div class='umodal-photos'>";
+    if (ph.length === 0) {
+      photosHtml += "<div class='ph' style='font-size:64px;'>" + icon + "</div>";
+    } else {
+      ph.forEach(function(p) {
+        photosHtml += "<div class='ph'><img src='" + API + sanitize(p) + "?t=" + Date.now() + "' onerror=\"this.parentElement.innerHTML='" + icon + "'\"></div>";
+      });
+    }
+    photosHtml += "</div>";
+
+    // פרטים
+    var rows = [
+      ["גיל", u.age ? u.age + " שנים" : null],
+      ["מין", lbl("gender", u.gender)],
+      ["עיר", u.location],
+      ["גובה", u.height ? u.height + " ס\"מ" : null],
+      ["מבנה גוף", lbl("body_type", u.body_type)],
+      ["צבע עיניים", lbl("eye_color", u.eye_color)],
+      ["צבע שיער", lbl("hair_color", u.hair_color)],
+      ["גוון עור", lbl("skin_tone", u.skin_tone)],
+      ["מצב משפחתי", lbl("marital_status", u.marital_status)],
+      ["דת", lbl("religion", u.religion)],
+      ["עישון", lbl("smoking", u.smoking)]
+    ].filter(function(r) { return r[1]; });
+
+    var detailsHtml = rows.length ? "<div class='umodal-details'>" + rows.map(function(r) {
+      return "<div class='umodal-detail'>"
+        + "<div class='umodal-detail-label'>" + r[0] + "</div>"
+        + "<div class='umodal-detail-value'>" + sanitize(r[1]) + "</div>"
+        + "</div>";
+    }).join("") + "</div>" : "";
+
+    var bioHtml = u.bio ? "<div class='umodal-bio'><div class='umodal-bio-label'>קצת עליי</div>" + sanitize(u.bio) + "</div>" : "";
+
+    ge("umodal-inner").innerHTML = photosHtml
+      + "<div class='umodal-body'>"
+      + "<div class='umodal-header'>"
+      + "<div class='umodal-av'>" + icon + "</div>"
+      + "<div><div class='umodal-name'>" + sanitize(u.name || "") + "</div>"
+      + "<div class='umodal-subname'>UIN: " + sanitize(u.uin || "") + "</div></div>"
+      + "</div>"
+      + detailsHtml
+      + bioHtml
+      + "<div class='umodal-msg' id='umodal-msg'></div>"
+      + "<button class='umodal-btn umodal-chat' onclick='window.umodalChat()'>💬 שלח הודעה</button>"
+      + "<div class='umodal-actions'>"
+      + "<button class='umodal-report' onclick='window.umodalReport()'>🚩 דווח</button>"
+      + "<button class='umodal-block' onclick='window.umodalBlock()'>🚫 חסום</button>"
+      + "</div>"
+      + "<button class='umodal-btn umodal-cancel' onclick='window.closeUserModal()'>ביטול</button>"
+      + "</div>";
+  }
+
+  function closeUserModal(e) {
+    if (!e || e.target === ge("umodal-overlay")) {
+      ge("umodal-overlay").classList.remove("on");
+    }
+  }
+
+  function umodalChat() {
+    ge("umodal-overlay").classList.remove("on");
+    openChat(umodalUin, umodalNameStr);
+  }
+
+  function showUmodalMsg(text, type) {
+    var el = document.getElementById("umodal-msg");
+    if (!el) return;
+    el.textContent = text;
+    el.className = "umodal-msg " + type;
+    el.style.display = "block";
+  }
+
+  // חשיפה גלובלית
+  window.umodalChat     = function() { umodalChat(); };
+  window.umodalBlock    = function() { umodalBlock(); };
+  window.umodalReport   = function() { umodalReport(); };
+  window.closeUserModal = function(e) { closeUserModal(e); };
+
+  function umodalBlock() {
+    if (!confirm("האם אתה בטוח שברצונך לחסום את " + umodalNameStr + "?")) return;
+    fetch(API + "/api/users/block", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
+      body: JSON.stringify({ blocked_uin: umodalUin })
+    }).then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.ok || d.success) {
+          showUmodalMsg("✅ המשתמש נחסם בהצלחה", "ok");
+          setTimeout(function() { ge("umodal-overlay").classList.remove("on"); }, 1500);
+        } else {
+          showUmodalMsg("שגיאה: " + (d.error || "נסה שוב"), "err");
+        }
+      }).catch(function() { showUmodalMsg("שגיאת חיבור לשרת", "err"); });
+  }
+
+  function umodalReport() {
+    var reason = prompt("מה הסיבה לדיווח? (תאר בקצרה)");
+    if (!reason) return;
+    fetch(API + "/api/users/report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
+      body: JSON.stringify({ reported_uin: umodalUin, reason: reason })
+    }).then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.ok || d.success) {
+          showUmodalMsg("✅ הדיווח נשלח, תודה", "ok");
+          setTimeout(function() { ge("umodal-overlay").classList.remove("on"); }, 1500);
+        } else {
+          showUmodalMsg("שגיאה: " + (d.error || "נסה שוב"), "err");
+        }
+      }).catch(function() { showUmodalMsg("שגיאת חיבור לשרת", "err"); });
+  }
+
+  // ── PROFILE ──
+  function loadProfile() {
+    if (!tok) return;
+    fetch(API + "/api/users/me", { headers: { Authorization: "Bearer " + tok } })
+      .then(function(r) {
+        if (r.status === 401) { handleUnauth(); return Promise.reject(); }
+        return r.json();
+      })
+      .then(function(d) {
+        ge("p-name").textContent = d.name || "-";
+        ge("p-uin").textContent = "UIN: " + (d.uin || "--");
+        if (me) ge("topbar-user").textContent = "שלום, " + d.name;
+        ge("e-name").value = d.name || "";
+        ge("e-age").value  = d.age  || "";
+        ge("e-loc").value  = d.location || "";
+        ge("e-bio").value  = d.bio  || "";
+        if (ge("e-height"))           ge("e-height").value           = d.height || "";
+        if (ge("e-body"))             ge("e-body").value             = d.body_type || "";
+        if (ge("e-eyes"))             ge("e-eyes").value             = d.eye_color || "";
+        if (ge("e-hair"))             ge("e-hair").value             = d.hair_color || "";
+        if (ge("e-skin"))             ge("e-skin").value             = d.skin_tone || "";
+        if (ge("e-marital"))          ge("e-marital").value          = d.marital_status || "";
+        if (ge("e-religion"))         ge("e-religion").value         = d.religion || "";
+        if (ge("e-religion-attitude")) ge("e-religion-attitude").value = d.religion_attitude || "";
+        if (ge("e-smoking"))          ge("e-smoking").value          = d.smoking || "";
+        var avBig = ge("main-photo-wrap");
+        if (d.photo1 && avBig) {
+          avBig.innerHTML = "<img src='" + API + d.photo1 + "?t=" + Date.now() + "' style='width:100%;height:100%;object-fit:cover;border-radius:50%;'>";
+          avBig.style.overflow = "hidden"; avBig.style.background = "none";
+        }
+        loadPhotos(d);
+      }).catch(function() {});
+  }
+
+  function doSave() {
+    ge("p-ok").style.display = "none";
+    var body = {};
+    if (ge("e-name").value.trim()) body.name = ge("e-name").value.trim();
+    if (ge("e-age").value) body.age = parseInt(ge("e-age").value);
+    body.location          = ge("e-loc").value.trim();
+    body.bio               = ge("e-bio").value.trim();
+    if (ge("e-height") && ge("e-height").value) body.height = parseInt(ge("e-height").value);
+    if (ge("e-body"))             body.body_type         = ge("e-body").value;
+    if (ge("e-eyes"))             body.eye_color         = ge("e-eyes").value;
+    if (ge("e-hair"))             body.hair_color        = ge("e-hair").value;
+    if (ge("e-skin"))             body.skin_tone         = ge("e-skin").value;
+    if (ge("e-marital"))          body.marital_status    = ge("e-marital").value;
+    if (ge("e-religion"))         body.religion          = ge("e-religion").value;
+    if (ge("e-religion-attitude")) body.religion_attitude = ge("e-religion-attitude").value;
+    if (ge("e-smoking"))          body.smoking           = ge("e-smoking").value;
+    var btn = ge("btn-save"); btn.textContent = "שומר..."; btn.disabled = true;
+    fetch(API + "/api/users/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
+      body: JSON.stringify(body)
+    }).then(function(r) {
+      if (r.status === 401) { handleUnauth(); return Promise.reject(); }
+      return r.json().then(function(d) { return {ok:r.ok,d:d}; });
+    })
+    .then(function(res) {
+      if (res.ok) { ge("p-ok").style.display = "block"; if (res.d.name) ge("p-name").textContent = res.d.name; }
+      else { alert("שגיאה בשמירה: " + (res.d.error || "נסה שוב")); }
+    }).catch(function() {})
+    .finally(function() { btn.textContent = "שמור שינויים"; btn.disabled = false; });
+  }
+
+  // ── CHANGE PASSWORD ──
+  function doChangePass() {
+    var oldPass = ge("e-pass-old") && ge("e-pass-old").value;
+    var newPass = ge("e-pass-new") && ge("e-pass-new").value;
+    var errEl = ge("pass-err"); var okEl = ge("pass-ok");
+    if (errEl) errEl.style.display = "none";
+    if (okEl)  okEl.style.display  = "none";
+    if (!oldPass || !newPass) {
+      if (errEl) { errEl.textContent = "נא למלא שתי הסיסמאות"; errEl.style.display = "block"; }
+      return;
+    }
+    if (newPass.length < 6) {
+      if (errEl) { errEl.textContent = "סיסמה חדשה — לפחות 6 תווים"; errEl.style.display = "block"; }
+      return;
+    }
+    var btn = ge("btn-change-pass"); btn.textContent = "משנה..."; btn.disabled = true;
+    fetch(API + "/api/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
+      body: JSON.stringify({ old_password: oldPass, new_password: newPass })
+    }).then(function(r) {
+      if (r.status === 401) { handleUnauth(); return Promise.reject(); }
+      return r.json().then(function(d) { return {ok:r.ok,d:d}; });
+    })
+    .then(function(res) {
+      if (res.ok) {
+        if (okEl) okEl.style.display = "block";
+        ge("e-pass-old").value = ""; ge("e-pass-new").value = "";
+      } else {
+        if (errEl) { errEl.textContent = res.d.error || "שגיאה"; errEl.style.display = "block"; }
+      }
+    }).catch(function() {
+      if (errEl) { errEl.textContent = "שגיאת חיבור"; errEl.style.display = "block"; }
+    }).finally(function() { btn.textContent = "שנה סיסמה"; btn.disabled = false; });
+  }
+
+  // ── AUTH ──
+  function doLogin() {
+    var errEl = ge("l-err"); errEl.style.display = "none";
+    var email = gv("l-email").trim(), pass = gv("l-pass");
+    if (!email || !pass) { errEl.textContent = "נא למלא אימייל וסיסמה"; errEl.style.display = "block"; return; }
+    if (!isValidEmail(email)) { errEl.textContent = "כתובת אימייל לא תקינה"; errEl.style.display = "block"; return; }
+    var btn = ge("btn-login"); btn.textContent = "מתחבר..."; btn.disabled = true;
+    fetch(API + "/api/auth/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: pass })
+    }).then(function(r) { return r.json().then(function(d) { return {ok:r.ok,d:d}; }); })
+    .then(function(res) {
+      if (!res.ok) {
+        errEl.textContent = res.d.error || "שגיאה בכניסה"; errEl.style.display = "block";
+        return;
+      }
+      tok = res.d.token; me = res.d;
+      localStorage.setItem("ft_tok", tok); localStorage.setItem("ft_me", JSON.stringify(me));
+      showApp(); loadProfile();
+      initSocket();
+    }).catch(function() { errEl.textContent = "שגיאת חיבור לשרת"; errEl.style.display = "block"; })
+    .finally(function() { btn.textContent = "כניסה"; btn.disabled = false; });
+  }
+
+  function doRegister() {
+    var errEl = ge("r-err"); errEl.style.display = "none";
+    var name = gv("r-name").trim(), email = gv("r-email").trim(), pass = gv("r-pass");
+    var age = parseInt(gv("r-age")), gender = gv("r-gender");
+    if (!name)  { errEl.textContent = "נא להכניס שם"; errEl.style.display="block"; return; }
+    if (!email) { errEl.textContent = "נא להכניס אימייל"; errEl.style.display="block"; return; }
+    if (!isValidEmail(email)) { errEl.textContent = "כתובת אימייל לא תקינה"; errEl.style.display="block"; return; }
+    if (pass.length < 6) { errEl.textContent = "סיסמה לפחות 6 תווים"; errEl.style.display="block"; return; }
+    if (!age || age < 18) { errEl.textContent = "נא להכניס גיל (18+)"; errEl.style.display="block"; return; }
+    var body = { name:name, email:email, password:pass, age:age, gender:gender };
+    if (gv("r-loc").trim())    body.location       = gv("r-loc").trim();
+    if (gv("r-height"))        body.height         = parseInt(gv("r-height"));
+    if (gv("r-body"))          body.body_type      = gv("r-body");
+    if (gv("r-eyes"))          body.eye_color      = gv("r-eyes");
+    if (gv("r-hair"))          body.hair_color     = gv("r-hair");
+    if (gv("r-skin"))          body.skin_tone      = gv("r-skin");
+    if (gv("r-marital"))       body.marital_status = gv("r-marital");
+    if (gv("r-religion"))      body.religion       = gv("r-religion");
+    if (gv("r-smoking"))       body.smoking        = gv("r-smoking");
+    if (gv("r-bio").trim())    body.bio            = gv("r-bio").trim();
+    var btn = ge("btn-reg"); btn.textContent = "יוצר חשבון..."; btn.disabled = true;
+    fetch(API + "/api/auth/register", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    }).then(function(r) { return r.json().then(function(d) { return {ok:r.ok,d:d}; }); })
+    .then(function(res) {
+      if (!res.ok) { errEl.textContent = res.d.error || "שגיאה בהרשמה"; errEl.style.display="block"; return; }
+      tok = res.d.token; me = res.d;
+      localStorage.setItem("ft_tok", tok); localStorage.setItem("ft_me", JSON.stringify(me));
+      ge("uin-welcome").textContent = "ברוכ/ה הבא/ה, " + res.d.name + "!";
+      ge("uin-val").textContent = res.d.uin;
+      showPage("pg-uin");
+    }).catch(function() { errEl.textContent = "שגיאת חיבור לשרת"; errEl.style.display="block"; })
+    .finally(function() { btn.textContent = "יצירת חשבון ✨"; btn.disabled = false; });
+  }
+
+
+  // ── PHOTO UPLOAD ──
+  function compressImage(file, cb) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var maxW = 800, maxH = 800;
+        var w = img.width, h = img.height;
+        if (w > maxW) { h = h * maxW / w; w = maxW; }
+        if (h > maxH) { w = w * maxH / h; h = maxH; }
+        var canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function(blob) { cb(blob); }, "image/jpeg", 0.82);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function deletePhoto(slot) {
+    if (!confirm("למחוק תמונה זו?")) return;
+    fetch(API + "/api/users/photo/" + slot, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer " + tok }
+    }).then(function(r) {
+      if (r.ok) {
+        var prev = ge("prev-"+slot);
+        prev.innerHTML = slot === 1 ? "&#x1F4F7;" : "&#x2795;";
+        prev.classList.remove("has-photo");
+        if (slot === 1) {
+          var avBig = ge("main-photo-wrap");
+          avBig.innerHTML = "&#x1F495;";
+          avBig.style.overflow = ""; avBig.style.background = "";
+        }
+      }
+    }).catch(function() { alert("שגיאה במחיקה"); });
+  }
+  window.deletePhoto = deletePhoto;
+
+  function initPhotoSlots() {
+    [1,2,3].forEach(function(slot) {
+      var fileEl = ge("file-"+slot);
+      if (!fileEl) return;
+      fileEl.addEventListener("change", function() {
+        var file = this.files[0];
+        if (!file) return;
+        var prev = ge("prev-"+slot);
+        prev.innerHTML = "&#128228;";
+        compressImage(file, function(blob) {
+          var formData = new FormData();
+          formData.append("photo", blob, "photo.jpg");
+          formData.append("slot", String(slot));
+          fetch(API + "/api/users/photo", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + tok },
+            body: formData
+          }).then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.url) {
+              prev.innerHTML = "<img src='" + API + d.url + "?t=" + Date.now() + "' style='width:100%;height:100%;object-fit:cover;border-radius:14px;'>"
+                + "<button onclick='deletePhoto(" + slot + ")' style='position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:12px;cursor:pointer;line-height:1;'>✕</button>";
+              prev.style.position = "relative";
+              prev.classList.add("has-photo");
+              if (slot === 1) {
+                var avBig = ge("main-photo-wrap");
+                avBig.innerHTML = "<img src='" + API + d.url + "?t=" + Date.now() + "' style='width:100%;height:100%;object-fit:cover;border-radius:50%;'>";
+                avBig.style.overflow = "hidden"; avBig.style.background = "none";
+              }
+            }
+          }).catch(function() { prev.innerHTML = "&#10060;"; prev.style.position=""; });
+        });
+        this.value = "";
+      });
+    });
+  }
+
+  function loadPhotos(user) {
+    [1,2,3].forEach(function(slot) {
+      var prev = ge("prev-"+slot);
+      if (!prev) return;
+      var url = user["photo"+slot];
+      if (url) {
+        prev.innerHTML = "<img src='" + API + url + "?t=" + Date.now() + "' style='width:100%;height:100%;object-fit:cover;border-radius:14px;'>"
+          + "<button onclick='deletePhoto(" + slot + ")' style='position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:12px;cursor:pointer;line-height:1;'>✕</button>";
+        prev.style.position = "relative";
+        prev.classList.add("has-photo");
+        // שמור photo1 לרשימת שיחות
+        if (slot === 1 && me) {
+          var uin = user.uin || (me && me.uin);
+          if (uin && chats[uin]) chats[uin].photo = url;
+        }
+      } else {
+        prev.innerHTML = slot === 1 ? "&#x1F4F7;" : "&#x2795;";
+        prev.style.position = "";
+        prev.classList.remove("has-photo");
+      }
+    });
+  }
+
+  // ── WIRE UP ──
+  tok = localStorage.getItem("ft_tok");
+  me  = JSON.parse(localStorage.getItem("ft_me") || "null");
+
+  ge("btn-login").addEventListener("click", doLogin);
+  ge("btn-toreg").addEventListener("click", function() { showPage("pg-reg"); });
+  ge("btn-reg").addEventListener("click", doRegister);
+  ge("btn-tologin").addEventListener("click", function() { showPage("pg-login"); });
+  ge("btn-toapp").addEventListener("click", function() { showApp(); loadProfile(); });
+  ge("btn-search").addEventListener("click", doSearch);
+  ge("btn-back").addEventListener("click", function() {
+    ge("cwin").classList.remove("on");
+    ge("clist-wrap").style.display = "block";
+    activeUin = null; renderCList();
+  });
+  ge("btn-send").addEventListener("click", doSend);
+  ge("msg-inp").addEventListener("keydown", function(e) { if (e.key === "Enter") doSend(); });
+  ge("btn-save").addEventListener("click", doSave);
+  if (ge("btn-change-pass")) ge("btn-change-pass").addEventListener("click", doChangePass);
+  ge("btn-logout").addEventListener("click", function() {
+    if (socket) { socket.disconnect(); socket = null; }
+    localStorage.removeItem("ft_tok"); localStorage.removeItem("ft_me");
+    tok = null; me = null; chats = {}; activeUin = null;
+    showPage("pg-login");
+  });
+
+  document.querySelectorAll(".bnav-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() { showTab(this.dataset.tab); });
+  });
+
+  initPhotoSlots();
+  if (tok && me) { showApp(); showTab("search"); loadProfile(); initSocket(); }
+})();
+</script>
+
 </body>
 </html>
